@@ -9,7 +9,7 @@
 #include "x_gpio.h"
 
 
-extern uint8_t SYSCFG_EXTICR_helper_func(__R GPIOx_Reg_t *port);
+extern uint8_t SYSCFG_EXTICR_helper_func(__R GPIOx_Reg_t *const port);
 
 /*
 
@@ -80,7 +80,7 @@ void GPIO_Init(__W GPIO_Handle_t *const ptr_GPIOHandle)
 			SYSCFG_CLK_EN();
 			uint8_t exticr_port_number = ptr_GPIOHandle->GPIO_PinConfig.GPIO_PinNumber / 4;
 			uint8_t pin_offset = ptr_GPIOHandle->GPIO_PinConfig.GPIO_PinNumber % 4;
-			uint8_t port_code = SYSCFG_EXTICR_helper_func((__R GPIOx_Reg_t *)ptr_GPIOHandle->ptr_GPIOx);
+			uint8_t port_code = SYSCFG_EXTICR_helper_func((__R GPIOx_Reg_t *const)ptr_GPIOHandle->ptr_GPIOx);
 
 			// Note that each pin in EXTICR takes 3 bits, so triple bit-shift
 			SYSCFG->EXTICR[exticr_port_number] |= (port_code << 3 * pin_offset);
