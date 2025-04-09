@@ -41,30 +41,29 @@
 #define __W							volatile			/* volatile, write only */
 
 
-/* Base Addresses of the MCU Memories  */
-#define FLASH_BASE_ADDR 				0x8000000UL 		/* Memory-mapped base address of the MCU Flash Memory */
-#define SRAM1_BASE_ADDR 				0x20000000UL 		/* Memory-mapped base address of the MCU Primary Static RAM */
-#define SRAM2_BASE_ADDR 				0x2000C000UL 		/* Memory-mapped base address of the MCU Auxiliary Static RAM */
+/* Base Addresses of the MCU Internal Memories */
+#define SRAM1_BASE_ADDR 				0x20000000UL
+#define SRAM2_BASE_ADDR 				0x2000C000UL
 
-#define SRAM_BASE_ADDR 				SRAM1_BASE_ADDR 	/* Memory-mapped base address of the MCU Static RAM */
+#define SRAM_BASE_ADDR 				SRAM1_BASE_ADDR
 
-#define ROM_BASE_ADDR 				0x1FFF0000UL 		/* Memory-mapped base address of the MCU System Memory */
+#define ROM_BASE_ADDR 				0x1FFF0000UL
 
 
 /* Base Addresses of the MCU Bus Domains */
-#define PERIPHERAL_BASE_ADDR 			0x40000000UL		/* Memory-mapped base address for MCU Peripherals */
+#define PERIPHERAL_BASE_ADDR 			0x40000000U
 
-#define APB1_PERIPHERAL_OFFSET		0x0UL		/* Offset of APB1 base address from Peripherals base address */
-#define APB1_BASE_ADDR				(PERIPHERAL_BASE_ADDR + APB1_PERIPHERAL_OFFSET) /* Memory-mapped base address for MCU APB1 Bus */
+#define APB1_PERIPHERAL_OFFSET		0x0UL
+#define APB1_BASE_ADDR				(PERIPHERAL_BASE_ADDR + APB1_PERIPHERAL_OFFSET)
 
-#define APB2_PERIPHERAL_OFFSET		0x10000UL		/* Offset of AHB1 base address from Peripherals base address */
-#define APB2_BASE_ADDR				(PERIPHERAL_BASE_ADDR + APB2_PERIPHERAL_OFFSET) /* Memory-mapped base address for MCU APB2 Bus */
+#define APB2_PERIPHERAL_OFFSET		0x10000UL
+#define APB2_BASE_ADDR				(PERIPHERAL_BASE_ADDR + APB2_PERIPHERAL_OFFSET)
 
-#define AHB1_PERIPHERAL_OFFSET		0x20000UL		/* Offset of AHB1 bus base address from Peripherals base address */
-#define AHB1_BASE_ADDR				(PERIPHERAL_BASE_ADDR + AHB1_PERIPHERAL_OFFSET) /* Memory-mapped base address for MCU AHB1 Bus */
+#define AHB1_PERIPHERAL_OFFSET		0x20000UL
+#define AHB1_BASE_ADDR				(PERIPHERAL_BASE_ADDR + AHB1_PERIPHERAL_OFFSET)
 
-#define AHB2_PERIPHERAL_OFFSET		0x8000000UL		/* Offset of AHB2 bus base address from Peripherals base address */
-#define AHB2_BASE_ADDR				(PERIPHERAL_BASE_ADDR + AHB2_PERIPHERAL_OFFSET) /* Memory-mapped base address for MCU AHB2 Bus */
+#define AHB2_PERIPHERAL_OFFSET		0x8000000UL
+#define AHB2_BASE_ADDR				(PERIPHERAL_BASE_ADDR + AHB2_PERIPHERAL_OFFSET)
 
 /* Base Addresses of Peripherals on each Bus Domain, AHBx and APBx */
 
@@ -219,14 +218,17 @@
 
 /********************************** PERIPHERAL REGISTER STRUCTURE DEFINITIONS **********************************/
 
-/* GPIO Peripheral Registers */
+/*
+ * @GPIO_PERIPHERAL_REGISTERS
+ * Initializer for a GPIO peripheral instance, containing all memory-mapped registers
+ */
 typedef struct GPIO_PeripheralRegisters
 {
 	__RW uint32_t MODER;					/* GPIO Port Mode Register */
 	__RW uint32_t OTYPER;					/* GPIO Port Output Type Register */
 	__RW uint32_t OSPEEDR;					/* GPIO Port Output Speed Register */
 	__RW uint32_t PUPDR;					/* GPIO Port Pull-Up/Pull-Down Register */
-	volatile __R  uint32_t IDR;			/* GPIO Port Input Data Register */
+	__R volatile uint32_t IDR;				/* GPIO Port Input Data Register */
 	__RW uint32_t ODR;						/* GPIO Port Output Data Register */
 	__W  uint32_t BSRR;						/* GPIO Port Bit Set-Reset Register */
 	__RW uint32_t LCKR;						/* GPIO Port Configuration Lock Register */
@@ -235,7 +237,10 @@ typedef struct GPIO_PeripheralRegisters
 	__W  uint32_t BRR;						/* GPIO Port Bit Reset Register */
 } GPIOx_Reg_t;
 
-/* RCC Peripheral Registers */
+/*
+ * @RCC_PERIPHERAL_REGISTERS
+ * Initializer for an RCC peripheral instance, containing all memory-mapped registers
+ */
 typedef struct RCC_PeripheralRegisters
 {
 	__RW uint32_t CR;						/* RCC Clock Control Register */
@@ -245,7 +250,7 @@ typedef struct RCC_PeripheralRegisters
 	__RW uint32_t PLLSAI1CFGR;				/* RCC PLLSAI1 Configuration Register */
 	uint32_t RESERVED1;						/* Reserved Offset 0x14 - 0x17 */
 	__RW uint32_t CIER;						/* RCC Clock Interrupt Enable Register */
-	volatile __R  uint32_t CIFR;			/* RCC Clock Interrupt Flag Register */
+	__R volatile uint32_t CIFR;			/* RCC Clock Interrupt Flag Register */
 	__W  uint32_t CICR;						/* RCC Clock Interrupt Clear Register */
 	uint32_t RESERVED2;						/* Reserved Offset 0x24 - 0x27 */
 	__RW uint32_t AHB1RSTR;					/* RCC AHB1 Peripheral Reset Register */
@@ -276,11 +281,14 @@ typedef struct RCC_PeripheralRegisters
 	uint32_t RESERVED9;						/* Reserved Offset 0x8C - 0x8F */
 	__RW uint32_t BDCR;						/* RCC Backup Domain Control Register */
 	__RW uint32_t CSR;						/* RCC Control/Status Register, [1] - R */
-	volatile __R  uint32_t CRRCR;			/* RCC Clock Recovery RC Register, [0] - RW*/
+	__R volatile uint32_t CRRCR;			/* RCC Clock Recovery RC Register, [0] - RW*/
 	__RW uint32_t CCIPR2;					/* RCC Peripherals Independent Clock Configuration Register */
 } RCC_Reg_t;
 
-/* SYSCFG Peripheral Registers */
+/*
+ * @SYSCFG_PERIPHERAL_REGISTERS
+ * Initializer for a SYSCFG peripheral instance, containing all memory-mapped registers
+ */
 typedef struct SYSCFG_PeripheralRegisters
 {
 	__RW uint32_t MEMRMP;					/* SYSCFG memory remap register */
@@ -292,7 +300,10 @@ typedef struct SYSCFG_PeripheralRegisters
 	__RW uint32_t SKR;						/* SYSCFG SRAM2 key register */
 } SYSCFG_Reg_t;
 
-/* EXTI Peripheral Registers */
+/*
+ * @EXTI_PERIPHERAL_REGISTERS
+ * Initializer for an EXTI peripheral instance, containing all memory-mapped registers
+ */
 typedef struct EXTI_PeripheralRegisters
 {
 	__RW uint32_t IMR1;						/* EXTI Interrupt Mask Register 1 */
@@ -310,7 +321,24 @@ typedef struct EXTI_PeripheralRegisters
 	__RW uint32_t PR2;						/* EXTI Pending Register 2 */
 } EXTI_Reg_t;
 
-/* Interrupt request numbers, based on MCU NVIC vector table */
+/*
+ * @SPI_PERIPHERAL_REGISTERS
+ * Initializer for an SPI peripheral instance, containing all memory-mapped registers
+ */
+typedef struct SPI_PeripheralRegisters
+{
+	__RW uint32_t CR1;						/* SPI control register 1 */
+	__RW uint32_t CR2;						/* SPI control register 2 */
+	__R volatile uint32_t SR;				/* SPI status register, see CRCERR flag */
+	__RW uint32_t CRCPR;					/* SPI CRC polynomial register */
+	__R volatile uint32_t RXCRCR;			/* SPI Rx CRC register */
+	__R volatile uint32_t TXCRCR;			/* SPI Tx CRC register */
+} SPIx_Reg_t;
+
+/*
+ * @NVIC_IRQ_NUMBERS
+ * NVIC possible interrupt request numbers, based on MCU NVIC vector table
+ */
 typedef enum NVIC_IRQ_Numbers
 {
 	EXTI0 = 6, EXTI1, EXTI2, EXTI3, EXTI4, EXTI9_5 = 23, EXTI15_10 = 40,

@@ -8,13 +8,18 @@
 #ifndef INC_X_GPIO_H_
 #define INC_X_GPIO_H_
 
+
 #include "stm32l433xx.h"
+
 
 /* Structure forward declaration */
 typedef struct GPIOHandleStructure GPIO_Handle_t;
 typedef struct GPIOPinConfiguration GPIO_PinConfig_t;
 
-/* Configuration structure for a GPIO pin */
+/*
+ * @GPIO_PIN_CONFIGURATION
+ * Initializer for a GPIO pin configuration structure, containing all pin settings
+ */
 typedef struct GPIOPinConfiguration
 {
 	uint8_t GPIO_PinNumber;								/* !< Possible values from @GPIO_PIN_NUMBERS > */
@@ -22,14 +27,17 @@ typedef struct GPIOPinConfiguration
 	uint8_t GPIO_PinOSpeed;								/* !< Possible values from @GPIO_PIN_OUTPUT_SPEEDS > */
 	uint8_t GPIO_PinPUPDControl;						/* !< Possible values from @GPIO_PIN_RESISTOR_CONFIGS > */
 	uint8_t GPIO_PinOType;								/* !< Possible values from @GPIO_PIN_OUTPUT_TYPES > */
-	uint8_t GPIO_PinAltFunc;
+	uint8_t GPIO_PinAltFunc;							/* !< Possible values from @GPIO_PIN_ALTERNATE_FUNCTIONS > */
 } GPIO_PinConfig_t;
 
-/* Handle structure for a GPIO pin */
+/*
+ * @GPIO_HANDLER
+ * Initializer for a GPIO handler structure, that manages a GPIO instance's configuration and properties
+ */
 typedef struct GPIOHandleStructure
 {
 	__RW GPIOx_Reg_t *ptr_GPIOx;					/* This holds the base address of the GPIO port to which the pin belongs */
-	GPIO_PinConfig_t GPIO_PinConfig;					/* This holds GPIO pin configuration settings */
+	GPIO_PinConfig_t GPIO_PinConfig;				/* This holds GPIO pin configuration settings */
 } GPIO_Handle_t;
 
 /*
@@ -78,6 +86,10 @@ typedef enum GPIOPullUpPullDown
 	NONE, PULL_UP, PULL_DOWN,
 } GPIO_PUpDn_e;
 
+/*
+ * @GPIO_PIN_ALTERNATE_FUNCTIONS
+ * GPIO pin possible alternate function configurations
+ */
 typedef enum GPIOAlternateFunctions
 {
 	ALT_ZERO, ALT_ONE, ALT_TWO, ALT_THREE, ALT_FOUR, ALT_FIVE, ALT_SIX, ALT_SEVEN,
@@ -107,9 +119,6 @@ void GPIO_TogglePin(__RW GPIOx_Reg_t *const, uint8_t);
 void GPIO_IRQNumberConfig(uint8_t, uint8_t);
 void GPIO_IRQPriorityConfig(uint8_t, uint16_t);
 void GPIO_IRQHandler(uint8_t);
-
-
-
 
 
 #endif /* INC_X_GPIO_H_ */
