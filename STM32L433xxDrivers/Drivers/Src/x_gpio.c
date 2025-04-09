@@ -19,7 +19,7 @@ extern uint8_t SYSCFG_EXTICR_helper_func(__R GPIOx_Reg_t *const port);
  * @brief					- This function enables or disables the peripheral clock for the given GPIO port
  *
  * @param[ptr_GPIOx]		- base address of the GPIO peripheral
- * @param[en_di]			- ENABLE or DISABLE macros
+ * @param[en_di]			- ENABLE or DISABLE macros, ENABLE=1, DISABLE=0
  *
  * @return					- none
  *

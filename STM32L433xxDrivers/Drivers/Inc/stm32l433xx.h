@@ -357,6 +357,10 @@ typedef enum NVIC_IRQ_Numbers
 
 #define NVIC							( (uint32_t *)NVIC_IPRx_BASE_ADDR )
 
+#define SPI1							( (SPIx_Reg_t *)SPI1_BASE_ADDR )
+#define SPI2							( (SPIx_Reg_t *)SPI2_BASE_ADDR )
+#define SPI3							( (SPIx_Reg_t *)SPI3_BASE_ADDR )
+
 /* Peripheral Clock Enable/Disable Macro Definitions */
 
 /* Clock Enable for GPIOx */
@@ -410,6 +414,11 @@ typedef enum NVIC_IRQ_Numbers
 #define GPIOA_REG_RESET()				do { RCC->AHB2RSTR |= (1 << 0); RCC->AHB2RSTR &= ~(1 << 0); } while (0)
 #define GPIOB_REG_RESET()				do { RCC->AHB2RSTR |= (1 << 1); RCC->AHB2RSTR &= ~(1 << 1); } while (0)
 #define GPIOC_REG_RESET()				do { RCC->AHB2RSTR |= (1 << 2); RCC->AHB2RSTR &= ~(1 << 2); } while (0)
+
+/* SPI Register Reset Macro Definitions */
+#define SPI1_REG_RESET()				do { RCC->APB2RSTR |= (1 << 12); RCC->APB2RSTR &= ~(1 << 12); } while (0)
+#define SPI2_REG_RESET()				do { RCC->APB1RSTR1 |= (1 << 14); RCC->APB1RSTR1 &= ~(1 << 14); } while (0)
+#define SPI3_REG_RESET()				do { RCC->APB1RSTR1 |= (1 << 15); RCC->APB1RSTR1 &= ~(1 << 15); } while (0)
 
 /* Miscellaneous macros */
 #define ENABLE							(bool) 1
