@@ -105,7 +105,7 @@ typedef enum GPIOAlternateFunctions
 void GPIO_PeriphClkCtrl(__R GPIOx_Reg_t *const, uint8_t);
 
 /* GPIO Initialization */
-void GPIO_Init(__W GPIO_Handle_t *const);
+void GPIO_Init(__R GPIO_Handle_t *const);
 void GPIO_DeInit(__R GPIOx_Reg_t *const);					/* See RCC Peripheral Reset Register - Resets all registers */
 
 /* GPIO Data Read and Write */

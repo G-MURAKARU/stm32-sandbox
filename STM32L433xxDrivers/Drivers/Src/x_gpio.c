@@ -50,7 +50,7 @@ void GPIO_PeriphClkCtrl(__R GPIOx_Reg_t *const ptr_GPIOx, uint8_t en_di)
  * @Note					- none
 
  */
-void GPIO_Init(__W GPIO_Handle_t *const ptr_GPIOHandle)
+void GPIO_Init(__R GPIO_Handle_t *const ptr_GPIOHandle)
 {
 	/* 1. Configure the GPIO Pin Mode */
 	uint8_t pin_mode = ptr_GPIOHandle->GPIO_PinConfig.GPIO_PinMode;
@@ -86,27 +86,27 @@ void GPIO_Init(__W GPIO_Handle_t *const ptr_GPIOHandle)
 			// Note that each pin in EXTICR takes 3 bits, so triple bit-shift
 			SYSCFG->EXTICR[exticr_port_number] |= (port_code << 3 * pin_offset);
 
-			EXTI->IMR1 |= (1 << ptr_GPIOHandle->GPIO_PinConfig.GPIO_PinNumber);
+			EXTI->IMR1 |= (SET_ONE_BITMASK << ptr_GPIOHandle->GPIO_PinConfig.GPIO_PinNumber);
 			switch (pin_mode)
 			{
 				case INTERRUPT_FT:
 					// Enable falling edge triggering - FTSR
-					EXTI->FTSR1 |= (1 << ptr_GPIOHandle->GPIO_PinConfig.GPIO_PinNumber);
+					EXTI->FTSR1 |= (SET_ONE_BITMASK << ptr_GPIOHandle->GPIO_PinConfig.GPIO_PinNumber);
 					// Disable corresponding rising edge triggering - RTSR (precaution)
-					EXTI->RTSR1 &= ~(1 << ptr_GPIOHandle->GPIO_PinConfig.GPIO_PinNumber);
+					EXTI->RTSR1 &= ~(CLEAR_ONE_BITMASK << ptr_GPIOHandle->GPIO_PinConfig.GPIO_PinNumber);
 					break;
 
 				case INTERRUPT_RT:
 					// Enable rising edge triggering - RTSR
-					EXTI->RTSR1 |= (1 << ptr_GPIOHandle->GPIO_PinConfig.GPIO_PinNumber);
+					EXTI->RTSR1 |= (SET_ONE_BITMASK << ptr_GPIOHandle->GPIO_PinConfig.GPIO_PinNumber);
 					// Disable corresponding falling edge triggering - FTSR (precaution)
-					EXTI->FTSR1 &= ~(1 << ptr_GPIOHandle->GPIO_PinConfig.GPIO_PinNumber);
+					EXTI->FTSR1 &= ~(CLEAR_ONE_BITMASK << ptr_GPIOHandle->GPIO_PinConfig.GPIO_PinNumber);
 					break;
 
 				case INTERRUPT_RFT:
 					// Enable both FTSR and RTSR
-					EXTI->RTSR1 |= (1 << ptr_GPIOHandle->GPIO_PinConfig.GPIO_PinNumber);
-					EXTI->FTSR1 |= (1 << ptr_GPIOHandle->GPIO_PinConfig.GPIO_PinNumber);
+					EXTI->RTSR1 |= (SET_ONE_BITMASK << ptr_GPIOHandle->GPIO_PinConfig.GPIO_PinNumber);
+					EXTI->FTSR1 |= (SET_ONE_BITMASK << ptr_GPIOHandle->GPIO_PinConfig.GPIO_PinNumber);
 					break;
 
 				default:

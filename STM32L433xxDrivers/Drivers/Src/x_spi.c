@@ -46,9 +46,71 @@ void SPI_PeriphClkCtrl(__R SPIx_Reg_t *const ptr_SPIx, uint8_t en_di)
  * @Note					- none
 
  */
-void SPI_Init(__W SPI_Handle_t *const ptr_SPIHandle)
+void SPI_Init(__R SPI_Handle_t *const ptr_SPIHandle)
 {
-	//
+	/* set up for CR1 register contents */
+	volatile uint32_t temp_register = 0;
+
+	/* 1. Configure the device mode */
+	/* Set the MSTR bit in SPI CR1 if mode = master		!< Already cleared if slave > */
+	if (ptr_SPIHandle->SPI_Config.SPI_DeviceMode) temp_register |= (SET_ONE_BITMASK << MSTR);
+
+	/* 2. Configure the SPI Bus Mode */
+	switch (ptr_SPIHandle->SPI_Config.SPI_BusCommsConfig)
+	{
+		case FULL_DUPLEX:
+			// BIDI Mode should be cleared
+			/* temp_register &= ~(CLEAR_ONE_BITMASK << BIDIMODE);		!< Already cleared > */
+
+			// RXONLY should be cleared (FD enabled)
+			/* temp_register &= ~(CLEAR_ONE_BITMASK << RXONLY);			!< Already cleared > */
+
+			break;
+		case HALF_DUPLEX:
+			// BIDI Mode should be set
+			temp_register |= (SET_ONE_BITMASK << BIDIMODE);
+
+			// BIDI Output should be enabled
+			temp_register |= (SET_ONE_BITMASK << BIDIOE);
+
+			break;
+		case SIMPLEX_RX:
+			// BIDI Mode should be cleared
+			/* temp_register &= ~(CLEAR_ONE_BITMASK << BIDIMODE);		!< Already cleared > */
+
+			// RXONLY should be set
+			temp_register |= (SET_ONE_BITMASK << RXONLY);
+
+			break;
+
+		default:
+			break;
+	}
+
+	/* 3. Configure (pre-scale) the SPI bus baud rate */
+	temp_register |= (ptr_SPIHandle->SPI_Config.SPI_ClockConfig << BAUD);
+
+	/* 4. Configure the SPI data frame format */
+	/* Found in SPI CR2 */
+	ptr_SPIHandle->ptr_SPIx->CR2 |= (ptr_SPIHandle->SPI_Config.SPI_DataFrameFormat << DS);
+
+	/* 5. Configure the SPI clock polarity */
+	temp_register |= (ptr_SPIHandle->SPI_Config.SPI_ClockPolarity << CPOL);
+
+	/* 6. Configure the SPI clock phase */
+	temp_register |= (ptr_SPIHandle->SPI_Config.SPI_ClockPhase << CPHA);
+
+	/* 7. SPI CRC configurations */
+	if (ptr_SPIHandle->SPI_Config.SPI_CRCEnable)
+	{
+		/* Set CRC enabled bit */
+		temp_register |= (SET_ONE_BITMASK << CRCEN);
+		/* Select CRC length, set if 16-bit, leave cleared if 8-bit */
+		if (ptr_SPIHandle->SPI_Config.SPI_CRCLength) temp_register |= (SET_ONE_BITMASK << CRCL);
+	}
+
+	/* 8. Write configurations to SPI CR1 */
+	ptr_SPIHandle->ptr_SPIx->CR1 = temp_register;
 }
 
 

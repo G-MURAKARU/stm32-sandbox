@@ -429,6 +429,8 @@ typedef enum NVIC_IRQ_Numbers
 #define CLEAR_TWO_BITMASK				0x3UL
 #define CLEAR_FOUR_BITMASK			0xFUL
 #define SET_ONE_BITMASK				CLEAR_ONE_BITMASK
+#define SET_TWO_BITMASK				CLEAR_TWO_BITMASK
+#define SET_FOUR_BITMASK				CLEAR_FOUR_BITMASK
 #define GENERIC_OFFSET				(uint8_t) 4
 
 uint8_t SYSCFG_EXTICR_helper_func(__R GPIOx_Reg_t *);
