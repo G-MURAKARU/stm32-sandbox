@@ -5,17 +5,13 @@
  *      Author: OMEN 16
  */
 
+
 #include "stm32l433xx.h"
-#include "x_gpio.h"
 
 
-uint8_t SYSCFG_EXTICR_helper_func(__R GPIOx_Reg_t *const port)
+uint8_t get_flag_status(uint32_t register_contents, uint8_t flag_length, uint8_t offset)
 {
-	if (port == GPIOA) return (uint8_t) 0;
-
-	else if (port == GPIOB) return (uint8_t) 1;
-
-	else if (port == GPIOC) return (uint8_t) 2;
-
-	else return (-1);
+	if (flag_length == 1) return ( (register_contents >> offset) & CHECK_ONE_BITMASK );
+	else if (flag_length == 2) return ( (register_contents >> offset) & CHECK_TWO_BITMASK );
+	return (-1);
 }

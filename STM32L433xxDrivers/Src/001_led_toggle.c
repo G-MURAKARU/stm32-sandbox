@@ -24,7 +24,6 @@ int main(void)
 	gpio_LED.GPIO_PinConfig.GPIO_PinOType = PUSH_PULL;
 	gpio_LED.GPIO_PinConfig.GPIO_PinPUPDControl = NONE;
 
-	GPIO_PeriphClkCtrl(GPIOC, ENABLE);
 	GPIO_Init(&(gpio_LED));
 
 	for (;;)
@@ -32,6 +31,4 @@ int main(void)
 		GPIO_TogglePin(GPIOC, PIN_THIRTEEN);
 		delay();
 	}
-
-	return (0);
 }

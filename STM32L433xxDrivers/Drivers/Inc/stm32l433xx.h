@@ -36,9 +36,11 @@
 #define NO_PR_BITS_IMPLEMENTED		(uint8_t) 4
 
 
-#define __RW							volatile			/* volatile, readable and writable */
+/* Macros to be used with registers denoting contextual read/write access */
+#define __RW							volatile			/* readable and writable */
 #define __R							const				/* read only */
-#define __W							volatile			/* volatile, write only */
+#define __RH							volatile const		/* read only, hardware writable */
+#define __W							volatile			/* write only */
 
 
 /* Base Addresses of the MCU Internal Memories */
@@ -51,7 +53,7 @@
 
 
 /* Base Addresses of the MCU Bus Domains */
-#define PERIPHERAL_BASE_ADDR 			0x40000000U
+#define PERIPHERAL_BASE_ADDR 			0x40000000UL
 
 #define APB1_PERIPHERAL_OFFSET		0x0UL
 #define APB1_BASE_ADDR				(PERIPHERAL_BASE_ADDR + APB1_PERIPHERAL_OFFSET)
@@ -215,31 +217,29 @@
 #define SAI1_APB2_OFFSET				0x5400UL
 #define SAI1_BASE_ADDR				(APB2_BASE_ADDR + SAI1_APB2_OFFSET)
 
+/* Miscellaneous macros */
+#define ENABLE							(bool) 1
+#define DISABLE						(bool) 0
+#define SET							ENABLE
+#define RESET							DISABLE
+#define CLEAR_ONE_BITMASK				0x1UL
+#define CLEAR_TWO_BITMASK				0x3UL
+#define CLEAR_FOUR_BITMASK			0xFUL
+#define SET_ONE_BITMASK				CLEAR_ONE_BITMASK
+#define SET_TWO_BITMASK				CLEAR_TWO_BITMASK
+#define SET_FOUR_BITMASK				CLEAR_FOUR_BITMASK
+#define CHECK_ONE_BITMASK				CLEAR_ONE_BITMASK
+#define CHECK_TWO_BITMASK				CLEAR_TWO_BITMASK
+#define GENERIC_OFFSET				(uint8_t) 4
+
 
 /********************************** PERIPHERAL REGISTER STRUCTURE DEFINITIONS **********************************/
 
-/*
- * @GPIO_PERIPHERAL_REGISTERS
- * Initializer for a GPIO peripheral instance, containing all memory-mapped registers
- */
-typedef struct GPIO_PeripheralRegisters
-{
-	__RW uint32_t MODER;					/* GPIO Port Mode Register */
-	__RW uint32_t OTYPER;					/* GPIO Port Output Type Register */
-	__RW uint32_t OSPEEDR;					/* GPIO Port Output Speed Register */
-	__RW uint32_t PUPDR;					/* GPIO Port Pull-Up/Pull-Down Register */
-	__R volatile uint32_t IDR;				/* GPIO Port Input Data Register */
-	__RW uint32_t ODR;						/* GPIO Port Output Data Register */
-	__W  uint32_t BSRR;						/* GPIO Port Bit Set-Reset Register */
-	__RW uint32_t LCKR;						/* GPIO Port Configuration Lock Register */
-	__RW uint32_t AFRL;						/* GPIO Port Alternate Function Low Register */
-	__RW uint32_t AFRH;						/* GPIO Port Alternate Function High Register */
-	__W  uint32_t BRR;						/* GPIO Port Bit Reset Register */
-} GPIOx_Reg_t;
+/* GPIOx_Reg_t was here */
 
 /*
  * @RCC_PERIPHERAL_REGISTERS
- * Initializer for an RCC peripheral instance, containing all memory-mapped registers
+ * Reset & Clock Control; Initializer for an RCC peripheral instance, containing all memory-mapped registers
  */
 typedef struct RCC_PeripheralRegisters
 {
@@ -250,7 +250,7 @@ typedef struct RCC_PeripheralRegisters
 	__RW uint32_t PLLSAI1CFGR;				/* RCC PLLSAI1 Configuration Register */
 	uint32_t RESERVED1;						/* Reserved Offset 0x14 - 0x17 */
 	__RW uint32_t CIER;						/* RCC Clock Interrupt Enable Register */
-	__R volatile uint32_t CIFR;			/* RCC Clock Interrupt Flag Register */
+	__RH uint32_t CIFR;						/* RCC Clock Interrupt Flag Register */
 	__W  uint32_t CICR;						/* RCC Clock Interrupt Clear Register */
 	uint32_t RESERVED2;						/* Reserved Offset 0x24 - 0x27 */
 	__RW uint32_t AHB1RSTR;					/* RCC AHB1 Peripheral Reset Register */
@@ -281,9 +281,14 @@ typedef struct RCC_PeripheralRegisters
 	uint32_t RESERVED9;						/* Reserved Offset 0x8C - 0x8F */
 	__RW uint32_t BDCR;						/* RCC Backup Domain Control Register */
 	__RW uint32_t CSR;						/* RCC Control/Status Register, [1] - R */
-	__R volatile uint32_t CRRCR;			/* RCC Clock Recovery RC Register, [0] - RW*/
+	__RH uint32_t CRRCR;					/* RCC Clock Recovery RC Register, [0] - RW*/
 	__RW uint32_t CCIPR2;					/* RCC Peripherals Independent Clock Configuration Register */
 } RCC_Reg_t;
+
+typedef enum RCC_AHB2_EnableRegister
+{
+	GPIOAEN, GPIOBEN, GPIOCEN, ADCEN = 13, RNGEN = 18,
+} RCC_AHB2ENR_e;
 
 /*
  * @SYSCFG_PERIPHERAL_REGISTERS
@@ -321,19 +326,7 @@ typedef struct EXTI_PeripheralRegisters
 	__RW uint32_t PR2;						/* EXTI Pending Register 2 */
 } EXTI_Reg_t;
 
-/*
- * @SPI_PERIPHERAL_REGISTERS
- * Initializer for an SPI peripheral instance, containing all memory-mapped registers
- */
-typedef struct SPI_PeripheralRegisters
-{
-	__RW uint32_t CR1;						/* SPI control register 1 */
-	__RW uint32_t CR2;						/* SPI control register 2 */
-	__R volatile uint32_t SR;				/* SPI status register, see CRCERR flag */
-	__RW uint32_t CRCPR;					/* SPI CRC polynomial register */
-	__R volatile uint32_t RXCRCR;			/* SPI Rx CRC register */
-	__R volatile uint32_t TXCRCR;			/* SPI Tx CRC register */
-} SPIx_Reg_t;
+/* SPIx_Reg_t was here */
 
 /*
  * @NVIC_IRQ_NUMBERS
@@ -345,95 +338,58 @@ typedef enum NVIC_IRQ_Numbers
 } IRQNum_e;
 
 
-#define GPIOA 							( (GPIOx_Reg_t *)GPIOA_BASE_ADDR )
-#define GPIOB 							( (GPIOx_Reg_t *)GPIOB_BASE_ADDR )
-#define GPIOC 							( (GPIOx_Reg_t *)GPIOC_BASE_ADDR )
+/* GPIO base register pointers were here */
 
-#define RCC							( (RCC_Reg_t *)RCC_BASE_ADDR )
+/* Pointers to globally-used (peripheral) registers */
+#define RCC							( (__RW RCC_Reg_t *const)RCC_BASE_ADDR )
 
-#define EXTI							( (EXTI_Reg_t *)EXTI_BASE_ADDR )
+#define EXTI							( (__RW EXTI_Reg_t *const)EXTI_BASE_ADDR )
 
-#define SYSCFG							( (SYSCFG_Reg_t *)SYSCFG_BASE_ADDR )
+#define SYSCFG							( (__RW SYSCFG_Reg_t *const)SYSCFG_BASE_ADDR )
 
-#define NVIC							( (uint32_t *)NVIC_IPRx_BASE_ADDR )
+#define NVIC							( (__RW uint32_t *const)NVIC_IPRx_BASE_ADDR )
 
-#define SPI1							( (SPIx_Reg_t *)SPI1_BASE_ADDR )
-#define SPI2							( (SPIx_Reg_t *)SPI2_BASE_ADDR )
-#define SPI3							( (SPIx_Reg_t *)SPI3_BASE_ADDR )
+/* SPI base register pointers were here */
 
 /* Peripheral Clock Enable/Disable Macro Definitions */
 
-/* Clock Enable for GPIOx */
-#define GPIOA_CLK_EN() 				( (RCC->AHB2ENR) |= (1 << 0) )
-#define GPIOB_CLK_EN() 				( (RCC->AHB2ENR) |= (1 << 1) )
-#define GPIOC_CLK_EN() 				( (RCC->AHB2ENR) |= (1 << 2) )
-
-/* Clock Disable for GPIOx */
-#define GPIOA_CLK_DI() 				( (RCC->AHB2ENR) &= ~(1 << 0) )
-#define GPIOB_CLK_DI() 				( (RCC->AHB2ENR) &= ~(1 << 1) )
-#define GPIOC_CLK_DI() 				( (RCC->AHB2ENR) &= ~(1 << 2) )
+/* GPIO clock enable/disable macros were here */
 
 /* Clock Enable for I2Cx */
-#define I2C1_CLK_EN()					( (RCC->APB1ENR1) |= (1 << 21) )
-#define I2C2_CLK_EN()					( (RCC->APB1ENR1) |= (1 << 22) )
-#define I2C3_CLK_EN()					( (RCC->APB1ENR1) |= (1 << 23) )
+#define I2C1_CLK_EN()					( (RCC->APB1ENR1) |= (SET_ONE_BITMASK << 21) )
+#define I2C2_CLK_EN()					( (RCC->APB1ENR1) |= (SET_ONE_BITMASK << 22) )
+#define I2C3_CLK_EN()					( (RCC->APB1ENR1) |= (SET_ONE_BITMASK << 23) )
 
 /* Clock Disable for I2Cx */
-#define I2C1_CLK_DI()					( (RCC->APB1ENR1) &= ~(1 << 21) )
-#define I2C2_CLK_DI()					( (RCC->APB1ENR1) &= ~(1 << 22) )
-#define I2C3_CLK_DI()					( (RCC->APB1ENR1) &= ~(1 << 23) )
+#define I2C1_CLK_DI()					( (RCC->APB1ENR1) &= ~(CLEAR_ONE_BITMASK << 21) )
+#define I2C2_CLK_DI()					( (RCC->APB1ENR1) &= ~(CLEAR_ONE_BITMASK << 22) )
+#define I2C3_CLK_DI()					( (RCC->APB1ENR1) &= ~(CLEAR_ONE_BITMASK << 23) )
 
-/* Clock Enable for SPIx */
-#define SPI1_CLK_EN()					( (RCC->APB2ENR) |= (1 << 12) )
-#define SPI2_CLK_EN()					( (RCC->APB1ENR1) |= (1 << 14) )
-#define SPI3_CLK_EN()					( (RCC->APB1ENR1) |= (1 << 15) )
-
-/* Clock Disable for SPIx */
-#define SPI1_CLK_DI()					( (RCC->APB2ENR) &= ~(1 << 12) )
-#define SPI2_CLK_DI()					( (RCC->APB1ENR1) &= ~(1 << 14) )
-#define SPI3_CLK_DI()					( (RCC->APB1ENR1) &= ~(1 << 15) )
+/* SPI clock enable/disable macros were here */
 
 /* Clock Enable for U(S)ARTx */
-#define USART1_CLK_EN()				( (RCC->APB2ENR) |= (1 << 21) )
-#define USART2_CLK_EN()				( (RCC->APB1ENR1) |= (1 << 17) )
-#define USART3_CLK_EN()				( (RCC->APB1ENR1) |= (1 << 18) )
-#define LPUART_CLK_EN()				( (RCC->APB1ENR2) |= (1 << 0) )
+#define USART1_CLK_EN()				( (RCC->APB2ENR) |= (SET_ONE_BITMASK << 21) )
+#define USART2_CLK_EN()				( (RCC->APB1ENR1) |= (SET_ONE_BITMASK << 17) )
+#define USART3_CLK_EN()				( (RCC->APB1ENR1) |= (SET_ONE_BITMASK << 18) )
+#define LPUART_CLK_EN()				( (RCC->APB1ENR2) |= (SET_ONE_BITMASK << 0) )
 
 /* Clock Disable for U(S)ARTx */
-#define USART1_CLK_DI()				( (RCC->APB2ENR) &= ~(1 << 21) )
-#define USART2_CLK_DI()				( (RCC->APB1ENR1) &= ~(1 << 17) )
-#define USART3_CLK_DI()				( (RCC->APB1ENR1) &= ~(1 << 18) )
-#define LPUART_CLK_DI()				( (RCC->APB1ENR2) &= ~(1 << 0) )
+#define USART1_CLK_DI()				( (RCC->APB2ENR) &= ~(CLEAR_ONE_BITMASK << 21) )
+#define USART2_CLK_DI()				( (RCC->APB1ENR1) &= ~(CLEAR_ONE_BITMASK << 17) )
+#define USART3_CLK_DI()				( (RCC->APB1ENR1) &= ~(CLEAR_ONE_BITMASK << 18) )
+#define LPUART_CLK_DI()				( (RCC->APB1ENR2) &= ~(CLEAR_ONE_BITMASK << 0) )
 
 /* Clock Enable for SYSCFG */
-#define SYSCFG_CLK_EN()				( (RCC->APB2ENR) |= (1 << 0) )
+#define SYSCFG_CLK_EN()				( (RCC->APB2ENR) |= (SET_ONE_BITMASK << 0) )
 /* Clock Disable for SYSCFG */
-#define SYSCFG_CLK_DI()				( (RCC->APB2ENR) &= ~(1 << 0) )
+#define SYSCFG_CLK_DI()				( (RCC->APB2ENR) &= ~(CLEAR_ONE_BITMASK << 0) )
 
-/* GPIO Register Reset Macro Definitions */
-#define GPIOA_REG_RESET()				do { RCC->AHB2RSTR |= (1 << 0); RCC->AHB2RSTR &= ~(1 << 0); } while (0)
-#define GPIOB_REG_RESET()				do { RCC->AHB2RSTR |= (1 << 1); RCC->AHB2RSTR &= ~(1 << 1); } while (0)
-#define GPIOC_REG_RESET()				do { RCC->AHB2RSTR |= (1 << 2); RCC->AHB2RSTR &= ~(1 << 2); } while (0)
+/* GPIO register reset macros were here */
 
-/* SPI Register Reset Macro Definitions */
-#define SPI1_REG_RESET()				do { RCC->APB2RSTR |= (1 << 12); RCC->APB2RSTR &= ~(1 << 12); } while (0)
-#define SPI2_REG_RESET()				do { RCC->APB1RSTR1 |= (1 << 14); RCC->APB1RSTR1 &= ~(1 << 14); } while (0)
-#define SPI3_REG_RESET()				do { RCC->APB1RSTR1 |= (1 << 15); RCC->APB1RSTR1 &= ~(1 << 15); } while (0)
+/* SPI register reset macros were here */
 
-/* Miscellaneous macros */
-#define ENABLE							(bool) 1
-#define DISABLE						(bool) 0
-#define SET							ENABLE
-#define RESET							DISABLE
-#define CLEAR_ONE_BITMASK				0x1UL
-#define CLEAR_TWO_BITMASK				0x3UL
-#define CLEAR_FOUR_BITMASK			0xFUL
-#define SET_ONE_BITMASK				CLEAR_ONE_BITMASK
-#define SET_TWO_BITMASK				CLEAR_TWO_BITMASK
-#define SET_FOUR_BITMASK				CLEAR_FOUR_BITMASK
-#define GENERIC_OFFSET				(uint8_t) 4
 
-uint8_t SYSCFG_EXTICR_helper_func(__R GPIOx_Reg_t *);
+uint8_t get_flag_status(uint32_t, uint8_t, uint8_t);
 
 
 #endif /* INC_STM32L433XX_H_ */
