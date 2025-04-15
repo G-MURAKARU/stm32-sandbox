@@ -158,7 +158,7 @@ void SPI_DeInit(__RH SPIx_Reg_t *const ptr_SPIx)
 }
 
 
-/* SPI Data Read and Write */
+/* SPI Data Read and Write, assuming data being sent can only be 8-bit or 16-bit */
 
 /*
 
@@ -178,25 +178,48 @@ void SPI_DeInit(__RH SPIx_Reg_t *const ptr_SPIx)
  */
 void SPI_DataSend(__RW SPIx_Reg_t *const ptr_SPIx, const uint8_t *ptr_tx_data, int32_t data_length, uint8_t data_tx_size)
 {
+	uint8_t increment = 1;
+
+	if (data_tx_size == 16)
+	{
+		ptr_tx_data = (const uint16_t *)ptr_tx_data;
+		increment = 2;
+	}
+
 	// Check if there (still) exists data that needs to be transmitted
 	while (data_length > 0)
 	{
-		// Wait until the TXE flag in SPI status register is set
+		// Wait until the TXE (transmit empty) flag in SPI status register is set
 		while  ( !(get_flag_status(ptr_SPIx->SR, 1, TXE)) );
 
 		// Load transmit data into DR (tx FIFO) according to defined tx_size
 		// Note: data is right-aligned on 8-bit or 16-bit boundaries
+		ptr_SPIx->DR = *(ptr_tx_data);
+
+		data_length -= increment;
+		++ptr_tx_data;
+	}
+}
+
+void SPI_DataReceive(__RW SPIx_Reg_t *const ptr_SPIx, const uint8_t *ptr_rx_data, uint32_t data_length, uint8_t data_tx_size)
+{
+	// Check if there (still) exists data that needs to be received
+	while (data_length > 0)
+	{
+		// Wait until the RXNE (receive not empty) flag in SPI status register is set
+		while  ( !(get_flag_status(ptr_SPIx->SR, 1, RXNE)) );
+
+		// Read transmitted data from DR (rx FIFO) according to defined rx_size
+		// Note: data is right-aligned on 8-bit or 16-bit boundaries
 		if (data_tx_size < 8)
-			ptr_SPIx->DR = *(ptr_tx_data);
+			*(ptr_tx_data) = ptr_SPIx->DR;
 		else
-			ptr_SPIx->DR = *( (uint16_t *)ptr_tx_data );
+			*( (uint16_t *)ptr_tx_data ) = ptr_SPIx->DR;
 
 		data_length -= data_tx_size;
 		ptr_tx_data += (data_tx_size / 8) + 1; // pointer arithmetic
 	}
 }
-
-void SPI_DataReceive(__RW SPIx_Reg_t *const, const uint8_t *, uint32_t);
 
 /* SPI Interrupt Configuration/Handling */
 void SPI_IRQNumberConfig(uint8_t, uint8_t);
