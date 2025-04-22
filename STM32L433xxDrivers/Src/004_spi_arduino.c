@@ -44,26 +44,21 @@ int main(void)
 
 	gpio_BUTTON.GPIO_PinConfig.GPIO_PinNumber = PIN_ELEVEN;
 	gpio_BUTTON.GPIO_PinConfig.GPIO_PinMode = INTERRUPT_FT;
-	gpio_BUTTON.GPIO_PinConfig.GPIO_PinPUPDControl = PULL_UP;
+	gpio_BUTTON.GPIO_PinConfig.GPIO_PinPUPDControl = GPIO_PULL_UP;
 
 	gpio_LED.ptr_GPIOx = GPIOC;
 	gpio_LED.GPIO_PinConfig.GPIO_PinNumber = PIN_THIRTEEN;
 	gpio_LED.GPIO_PinConfig.GPIO_PinMode = OUTPUT;
-	gpio_LED.GPIO_PinConfig.GPIO_PinOSpeed = HIGH;
+	gpio_LED.GPIO_PinConfig.GPIO_PinOSpeed = GPIO_HIGH;
 	gpio_LED.GPIO_PinConfig.GPIO_PinOType = PUSH_PULL;
-	gpio_LED.GPIO_PinConfig.GPIO_PinPUPDControl = NONE;
+	gpio_LED.GPIO_PinConfig.GPIO_PinPUPDControl = GPIO_NONE;
 
 	GPIO_Init(&(gpio_LED));
 	GPIO_Init(&(gpio_BUTTON));
 
-//	SPI_Control(spi_handle.ptr_SPIx, ENABLE);
-//	uint32_t data_length = strlen(user_data) * 8; // return data length in bits
-//	SPI_DataSend(spi_handle.ptr_SPIx, (uint8_t *)&user_data, data_length, spi_handle.SPI_Config.SPI_DataFrameFormat);
-//	SPI_Control(spi_handle.ptr_SPIx, DISABLE);
-
 	// 6. IRQ Configurations
-	GPIO_IRQNumberConfig(EXTI15_10, ENABLE);
-	GPIO_IRQPriorityConfig(EXTI15_10, 15);
+	NVIC_IRQPositionConfig(IRQ_EXTI15_10, ENABLE);
+	NVIC_IRQPriorityConfig(IRQ_EXTI15_10, 15);
 
 	for (;;);
 }
@@ -74,8 +69,8 @@ void spi2_gpio_inits(__RW GPIO_Handle_t *const ptr_gpio_handle)
 
 	ptr_gpio_handle->GPIO_PinConfig.GPIO_PinMode = ALTERNATE;
 	ptr_gpio_handle->GPIO_PinConfig.GPIO_PinOType = PUSH_PULL;
-	ptr_gpio_handle->GPIO_PinConfig.GPIO_PinOSpeed = LOW;
-	ptr_gpio_handle->GPIO_PinConfig.GPIO_PinPUPDControl = NONE;
+	ptr_gpio_handle->GPIO_PinConfig.GPIO_PinOSpeed = GPIO_LOW;
+	ptr_gpio_handle->GPIO_PinConfig.GPIO_PinPUPDControl = GPIO_NONE;
 	ptr_gpio_handle->GPIO_PinConfig.GPIO_PinAltFunc = ALT_FIVE;
 
 	/* MISO */
@@ -99,12 +94,12 @@ void spi2_inits(__RW SPI_Handle_t *const ptr_spi_handle)
 {
 	ptr_spi_handle->ptr_SPIx = SPI2;
 
-	ptr_spi_handle->SPI_Config.SPI_DeviceMode = MASTER;
-	ptr_spi_handle->SPI_Config.SPI_BusCommsConfig = FULL_DUPLEX;
+	ptr_spi_handle->SPI_Config.SPI_DeviceMode = SPI_MASTER;
+	ptr_spi_handle->SPI_Config.SPI_BusCommsConfig = SPI_FULL_DUPLEX;
 	ptr_spi_handle->SPI_Config.SPI_ClockConfig = PRE_2;
 	ptr_spi_handle->SPI_Config.SPI_DataFrameFormat = FR_8BIT;
-	ptr_spi_handle->SPI_Config.SPI_ClockPolarity = CK_LOW;
-	ptr_spi_handle->SPI_Config.SPI_ClockPhase = CP_LOW;
+	ptr_spi_handle->SPI_Config.SPI_ClockPolarity = CPOL_LOW;
+	ptr_spi_handle->SPI_Config.SPI_ClockPhase = CPHA_LOW;
 	ptr_spi_handle->SPI_Config.SPI_SSM = SSM_DISABLE;
 	ptr_spi_handle->SPI_Config.SPI_SSOE = SSOE_ENABLE;
 	ptr_spi_handle->SPI_Config.SPI_NSSP = NSSP_ENABLE;
@@ -116,7 +111,7 @@ void EXTI15_10_IRQHandler(void)
 {
 	for (uint32_t i = 0; i < 400000; ++i);
 
-	GPIO_IRQHandler(PIN_ELEVEN);
+	GPIO_IRQHandlerFunc(PIN_ELEVEN);
 	GPIO_TogglePin(GPIOC, PIN_THIRTEEN);
 
 	SPI_Control(spi_handle.ptr_SPIx, ENABLE);
@@ -125,11 +120,9 @@ void EXTI15_10_IRQHandler(void)
 
 	SPI_DataSend(spi_handle.ptr_SPIx, (const uint8_t *)data_length, data_length, spi_handle.SPI_Config.SPI_DataFrameFormat);
 
-	data_length *= 8; // return data length in bits
-
 	SPI_DataSend(spi_handle.ptr_SPIx, (const uint8_t *)user_data, data_length, spi_handle.SPI_Config.SPI_DataFrameFormat);
 
-	while( get_flag_status(spi_handle.ptr_SPIx->SR, 1, BSY) && get_flag_status(spi_handle.ptr_SPIx->SR, 2, FTLVL) );
+	while( MCU_GetFlagStatus(spi_handle.ptr_SPIx->SR, 1, SPI_BSY) && MCU_GetFlagStatus(spi_handle.ptr_SPIx->SR, 2, SPI_FTLVL) );
 
 	SPI_Control(spi_handle.ptr_SPIx, DISABLE);
 }

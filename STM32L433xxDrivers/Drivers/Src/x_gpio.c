@@ -10,21 +10,23 @@
 #include "x_gpio.h"
 
 
+static uint8_t SYSCFG_EXTICR_HelperFunc(__R GPIOx_Reg_t *);
+
 /*
 
  * @fn						- GPIO_PeriphClkCtrl
  *
- * @brief					- this function enables or disables the peripheral clock for the given GPIO port
+ * @brief					- this function enables or disables the peripheral clock for the given GPIO port, through RCC
  *
  * @param[ptr_GPIOx]		- pointer to the base address of the GPIO peripheral
- * @param[en_di]			- ENABLE or DISABLE macros, ENABLE=1, DISABLE=0
+ * @param[en_di]			- action to take: ENABLE(1) or DISABLE(0)
  *
  * @return					- none
  *
  * @Note					- none
 
  */
-void GPIO_PeriphClkCtrl(__R GPIOx_Reg_t *const ptr_GPIOx, uint8_t en_di)
+void GPIO_PeriphClkCtrl(__R GPIOx_Reg_t *const ptr_GPIOx, bool en_di)
 {
 	if (ptr_GPIOx == GPIOA) (en_di) ? GPIOA_CLK_EN() : GPIOA_CLK_DI();
 
@@ -32,7 +34,7 @@ void GPIO_PeriphClkCtrl(__R GPIOx_Reg_t *const ptr_GPIOx, uint8_t en_di)
 
 	else if (ptr_GPIOx == GPIOC) (en_di) ? GPIOC_CLK_EN() : GPIOC_CLK_DI();
 
-	else;
+	else {};
 }
 
 /*
@@ -52,7 +54,7 @@ void func1(uint32_t *p, uint8_t e)
 
  * @fn						- GPIO_Init
  *
- * @brief					- this function initializes the given GPIO port/pin i.e. configures it with the provided settings
+ * @brief					- this function initializes the given GPIO port/pin i.e. configures it with the desired settings
  *
  * @param[ptr_GPIOHandle]	- pointer to the base address of the GPIO Handle structure
  *
@@ -61,7 +63,7 @@ void func1(uint32_t *p, uint8_t e)
  * @Note					- none
 
  */
-void GPIO_Init(__RH GPIO_Handle_t *const ptr_GPIOHandle)
+void GPIO_Init(__R GPIO_Handle_t *const ptr_GPIOHandle)
 {
 	/* Enable the peripheral clock */
 	GPIO_PeriphClkCtrl((__R GPIOx_Reg_t *const)ptr_GPIOHandle->ptr_GPIOx, ENABLE);
@@ -83,26 +85,42 @@ void GPIO_Init(__RH GPIO_Handle_t *const ptr_GPIOHandle)
 			 * Write this to the GPIO's mode register
 			 */
 			ptr_GPIOHandle->ptr_GPIOx->MODER &= ~( CLEAR_TWO_BITMASK << (2 * (ptr_GPIOHandle->GPIO_PinConfig.GPIO_PinNumber)) );
-			ptr_GPIOHandle->ptr_GPIOx->MODER |= ( ptr_GPIOHandle->GPIO_PinConfig.GPIO_PinMode ) << ( 2 * (ptr_GPIOHandle->GPIO_PinConfig.GPIO_PinNumber) );
+			ptr_GPIOHandle->ptr_GPIOx->MODER |= ( ptr_GPIOHandle->GPIO_PinConfig.GPIO_PinMode << ( 2 * (ptr_GPIOHandle->GPIO_PinConfig.GPIO_PinNumber) ) );
 			break;
 
 		/* Interrupt functions */
 		case INTERRUPT_FT:
 		case INTERRUPT_RT:
 		case INTERRUPT_RFT:
-			/* Pin must be configured as an input pin - '00' so no need to set */
+			// Pin must be configured as an input pin - '00' so no need to set
 			ptr_GPIOHandle->ptr_GPIOx->MODER &= ~( CLEAR_TWO_BITMASK << (2 * ptr_GPIOHandle->GPIO_PinConfig.GPIO_PinNumber) );
 
+			/* GPIO interrupts go through EXTI before NVIC, so the source input of an EXTI interrupt event should be configured
+			 * This is found in SYSCFG peripheral
+			 * R/W access to SYSCFG peripheral is needed, so its clock needs enabling
+			 */
 			SYSCFG_CLK_EN();
-			// see data sheet, there exists 4 EXTI control registers (EXTICR)
-			const uint8_t exticr_port_number = ptr_GPIOHandle->GPIO_PinConfig.GPIO_PinNumber / 4;
-			const uint8_t pin_offset = ptr_GPIOHandle->GPIO_PinConfig.GPIO_PinNumber % 4;
-			const uint8_t port_code = SYSCFG_EXTICR_helper_func((__R GPIOx_Reg_t *const)ptr_GPIOHandle->ptr_GPIOx);
 
-			// Note that each pin in EXTICR takes 3 bits, so triple bit-shift
+			/* Set the source input for an EXTI interrupt event, as per hardware (see EXTI MUX)
+			 * See data sheet, there exists 4 EXTI control registers (EXTICR), each handling 4 GPIO pins
+			 */
+
+			// Find which EXTI the GPIO pin belongs to
+			const uint8_t exticr_port_number = ptr_GPIOHandle->GPIO_PinConfig.GPIO_PinNumber / 4;
+
+			// Find the "index" of the 4-bit band in the derived EXTI corresponding to desired GPIO pin
+			const uint8_t pin_offset = ptr_GPIOHandle->GPIO_PinConfig.GPIO_PinNumber % 4;
+
+			// Find the numerical mapping of the desired port on SYSCFG EXTI control registers
+			// e.g. GPIOC is mapped to 0b010/0x2 in EXTICR4[2:0] to set GPIO C pin 13 as the source input for EXTI13 interrupt event
+			const uint8_t port_code = SYSCFG_EXTICR_HelperFunc((__R GPIOx_Reg_t *const)ptr_GPIOHandle->ptr_GPIOx);
+
+			// Note that each pin in SYSCFG EXTICR takes 3 bits plus a reserved MSB, so quad bit-shift
 			SYSCFG->EXTICR[exticr_port_number] |= (port_code << 4 * pin_offset);
 
+			// Attach the desired GPIO pin to the interrupt event
 			EXTI->IMR1 |= (SET_ONE_BITMASK << ptr_GPIOHandle->GPIO_PinConfig.GPIO_PinNumber);
+
 			switch (pin_mode)
 			{
 				case INTERRUPT_FT:
@@ -128,29 +146,29 @@ void GPIO_Init(__RH GPIO_Handle_t *const ptr_GPIOHandle)
 				default:
 					break;
 			}
+		default:
+			break;
 	}
-	if (pin_mode == OUTPUT)
-	{
-		/* 2. Configure the GPIO Pin Output Speed
-		 * Extract the pin number
-		 * Note that each pin in OSPEEDR takes 2 bits, so double bit-shift to extracted pin number
-		 * Clear the desired location
-		 * Bit-shift the desired pin speed by (2 * pin number) positions
-		 * Write this to the GPIO's output speed register
-		 */
-		ptr_GPIOHandle->ptr_GPIOx->OSPEEDR &= ~( CLEAR_TWO_BITMASK << (2 * (ptr_GPIOHandle->GPIO_PinConfig.GPIO_PinNumber)) );
-		ptr_GPIOHandle->ptr_GPIOx->OSPEEDR |= ( ptr_GPIOHandle->GPIO_PinConfig.GPIO_PinOSpeed ) << ( 2 * (ptr_GPIOHandle->GPIO_PinConfig.GPIO_PinNumber) );
 
-		/* 3. Configure the GPIO Pin Output Type
-		 * Extract the pin number
-		 * Note that each pin in OTYPER takes 1 bit, so single bit-shift to extracted pin number
-		 * Clear the desired location
-		 * Bit-shift the desired pin resistor configuration by (pin number) positions
-		 * Write this to the GPIO's output type register
-		 */
-		ptr_GPIOHandle->ptr_GPIOx->OTYPER &= ~( CLEAR_ONE_BITMASK << (ptr_GPIOHandle->GPIO_PinConfig.GPIO_PinNumber) );
-		ptr_GPIOHandle->ptr_GPIOx->OTYPER |= ( ptr_GPIOHandle->GPIO_PinConfig.GPIO_PinOType ) << ( ptr_GPIOHandle->GPIO_PinConfig.GPIO_PinNumber );
-	}
+	/* 2. Configure the GPIO Pin Output Speed
+	 * Extract the pin number
+	 * Note that each pin in OSPEEDR takes 2 bits, so double bit-shift to extracted pin number
+	 * Clear the desired location
+	 * Bit-shift the desired pin speed by (2 * pin number) positions
+	 * Write this to the GPIO's output speed register
+	 */
+	ptr_GPIOHandle->ptr_GPIOx->OSPEEDR &= ~( CLEAR_TWO_BITMASK << (2 * (ptr_GPIOHandle->GPIO_PinConfig.GPIO_PinNumber)) );
+	ptr_GPIOHandle->ptr_GPIOx->OSPEEDR |= ( ptr_GPIOHandle->GPIO_PinConfig.GPIO_PinOSpeed << ( 2 * (ptr_GPIOHandle->GPIO_PinConfig.GPIO_PinNumber) ) );
+
+	/* 3. Configure the GPIO Pin Output Type
+	 * Extract the pin number
+	 * Note that each pin in OTYPER takes 1 bit, so single bit-shift to extracted pin number
+	 * Clear the desired location
+	 * Bit-shift the desired pin resistor configuration by (pin number) positions
+	 * Write this to the GPIO's output type register
+	 */
+	ptr_GPIOHandle->ptr_GPIOx->OTYPER &= ~( CLEAR_ONE_BITMASK << (ptr_GPIOHandle->GPIO_PinConfig.GPIO_PinNumber) );
+	ptr_GPIOHandle->ptr_GPIOx->OTYPER |= ( ptr_GPIOHandle->GPIO_PinConfig.GPIO_PinOType << ( ptr_GPIOHandle->GPIO_PinConfig.GPIO_PinNumber ) );
 
 	/* 4. Configure the GPIO Pin Internal Resistor Configuration
 	 * Extract the pin number
@@ -160,21 +178,25 @@ void GPIO_Init(__RH GPIO_Handle_t *const ptr_GPIOHandle)
 	 * Write this to the GPIO's pull-up/-down register
 	 */
 	ptr_GPIOHandle->ptr_GPIOx->PUPDR &= ~( CLEAR_TWO_BITMASK << (2 * (ptr_GPIOHandle->GPIO_PinConfig.GPIO_PinNumber)) );
-	ptr_GPIOHandle->ptr_GPIOx->PUPDR |= ( ptr_GPIOHandle->GPIO_PinConfig.GPIO_PinPUPDControl ) << ( 2 * (ptr_GPIOHandle->GPIO_PinConfig.GPIO_PinNumber) );
+	ptr_GPIOHandle->ptr_GPIOx->PUPDR |= ( ptr_GPIOHandle->GPIO_PinConfig.GPIO_PinPUPDControl << ( 2 * (ptr_GPIOHandle->GPIO_PinConfig.GPIO_PinNumber) ) );
 
 	/* 5. Configure the GPIO Pin Alternate Functionality, if set to it
 	 * Extract the pin number
-	 * Note that each pin in AFR takes 4 bits, so quad bit-shift to extracted pin number
+	 * Note that each pin in AFRx takes 4 bits, so quad bit-shift to extracted pin number, corrected for AFRL/H
 	 * Clear the desired location
 	 * Bit-shift the desired pin alternate function by (4 * pin number) positions
 	 * Write this to the GPIO's alternate function register
 	 */
 	if (ptr_GPIOHandle->GPIO_PinConfig.GPIO_PinMode == ALTERNATE)
 	{
+		// variable to find the correct location to configure in AFRL/H, based on the desired pin number
 		uint8_t correction_factor = ptr_GPIOHandle->GPIO_PinConfig.GPIO_PinNumber / 8;
+
+		// AFRL -> pins 0-7, AFRH -> pin 8-15
 		volatile uint32_t *const temp = (ptr_GPIOHandle->GPIO_PinConfig.GPIO_PinNumber < PIN_EIGHT) ? &(ptr_GPIOHandle->ptr_GPIOx->AFRL) : &(ptr_GPIOHandle->ptr_GPIOx->AFRH);
+
 		*temp &= ~( CLEAR_FOUR_BITMASK << (4 * (ptr_GPIOHandle->GPIO_PinConfig.GPIO_PinNumber - (correction_factor * 8) )) );
-		*temp |= ( ptr_GPIOHandle->GPIO_PinConfig.GPIO_PinAltFunc ) << ( 4 * (ptr_GPIOHandle->GPIO_PinConfig.GPIO_PinNumber - (correction_factor * 8) ) );
+		*temp |= ( ptr_GPIOHandle->GPIO_PinConfig.GPIO_PinAltFunc << ( 4 * (ptr_GPIOHandle->GPIO_PinConfig.GPIO_PinNumber - (correction_factor * 8) ) ) );
 	}
 }
 
@@ -199,7 +221,7 @@ void GPIO_DeInit(__RH GPIOx_Reg_t *const ptr_GPIOx)
 
 	else if (ptr_GPIOx == GPIOC) GPIOC_REG_RESET();
 
-	else;
+	else {};
 }
 
 /*
@@ -218,8 +240,7 @@ void GPIO_DeInit(__RH GPIOx_Reg_t *const ptr_GPIOx)
  */
 uint8_t GPIO_ReadPin(__R GPIOx_Reg_t *const ptr_GPIOx, uint8_t pin_number)
 {
-//	return (uint8_t)( ptr_GPIOx->IDR & (CHECK_ONE_BITMASK << pin_number) );
-	return get_flag_status(ptr_GPIOx->IDR, 1, pin_number);
+ 	return MCU_GetFlagStatus(ptr_GPIOx->IDR, 1, pin_number);
 }
 
 /*
@@ -261,7 +282,7 @@ void GPIO_WritePin(__W GPIOx_Reg_t *const ptr_GPIOx, uint8_t pin_number, uint8_t
 
 	else if (value == RESET) ptr_GPIOx->ODR &= ~(CLEAR_ONE_BITMASK << pin_number);
 
-	else;
+	else {};
 }
 
 /*
@@ -302,62 +323,40 @@ void GPIO_TogglePin(__RW GPIOx_Reg_t *const ptr_GPIOx, uint8_t pin_number)
 	ptr_GPIOx->ODR ^= (SET_ONE_BITMASK << pin_number);
 }
 
-/* GPIO Interrupt Configuration/Handling */
-void GPIO_IRQNumberConfig(uint8_t IRQNumber, uint8_t en_di)
+/*
+
+ * @fn						- GPIO_IRQHandler
+ *
+ * @brief					- this function manages 'visibility' of the ISR for the IRQ position configured for the given EXTI interrupt event
+ *
+ * @param[pin_number]		- GPIO pin attached to the interrupt event
+ *
+ * @return					- none
+ *
+ * @Note					- none
+
+ */
+void GPIO_IRQHandlerFunc(uint8_t pin_number)
 {
-	/* Each bit in an ISER register represents an IRQ number,
-	 * Check data sheet for number of available/pre-configured IRQ numbers */
-	const uint8_t iser_reg_x = IRQNumber / 32;
-	const uint8_t iser_irq_offset = IRQNumber % 32;
-
-	const uint32_t irq_bitmask = (SET_ONE_BITMASK << iser_irq_offset);
-
-	switch (en_di)
-	{
-		case ENABLE:
-			if (iser_reg_x == 0) *NVIC_ISER0 |= irq_bitmask;
-
-			else if (iser_reg_x == 1) *NVIC_ISER1 |= irq_bitmask;
-
-			else if (iser_reg_x == 2) *NVIC_ISER2 |= irq_bitmask;
-
-			else if (iser_reg_x == 3) *NVIC_ISER3 |= irq_bitmask;
-			break;
-
-		case DISABLE:
-			if (iser_reg_x == 0) *NVIC_ICER0 |= irq_bitmask;
-
-			else if (iser_reg_x == 1) *NVIC_ICER1 |= irq_bitmask;
-
-			else if (iser_reg_x == 2) *NVIC_ICER2 |= irq_bitmask;
-
-			else if (iser_reg_x == 3) *NVIC_ICER3 |= irq_bitmask;
-			break;
-
-		default:
-			break;
-	}
+	// clear the corresponding flag in the Pending Interrupt register in the EXTI peripheral, to avoid repetitive interrupt triggering
+	// it is cleared by writing a '1' to the bit
+	if ( MCU_GetFlagStatus(EXTI->PR1, 1, pin_number) ) ( EXTI->PR1 |= (SET_ONE_BITMASK << pin_number) );
 }
 
-void GPIO_IRQPriorityConfig(uint8_t IRQNumber, uint16_t IRQPriority)
-{
-	// 1. Find priority register
-	const uint8_t priority_reg_x = IRQNumber / 4;
-	const uint8_t priority_irq_offset = IRQNumber % 4;
+/*
 
-	const uint8_t shift_amount = (priority_irq_offset * 8) + NO_PR_BITS_IMPLEMENTED;
+ * @fn						- SYSCFG_EXTICR_HelperFunc
+ *
+ * @brief					- this function finds the numerical mapping of a given GPIO port on its SYSCFG EXTICR
+ *
+ * @param[port]				- pointer to the GPIO port whose mapping is to be derived
+ *
+ * @return					- numerical mapping of the given GPIO port
+ *
+ * @Note					- see the reference manual's SYSCFG EXTICR section for more info on how ports are mapped onto the registers
 
-	/* Remember underlying working of pointer arithmetic */
-	*(NVIC + priority_reg_x) |= (IRQPriority << shift_amount);
-}
-
-void GPIO_IRQHandler(uint8_t pin_number)
-{
-	// clear the Pending Interrupt register in the EXTI peripheral
-	if ( get_flag_status(EXTI->PR1, 1, pin_number) ) ( EXTI->PR1 |= (SET_ONE_BITMASK << pin_number) );
-}
-
-uint8_t SYSCFG_EXTICR_helper_func(__R GPIOx_Reg_t *const port)
+ */
+static uint8_t SYSCFG_EXTICR_HelperFunc(__R GPIOx_Reg_t *const port)
 {
 	if (port == GPIOA) return (uint8_t) 0;
 

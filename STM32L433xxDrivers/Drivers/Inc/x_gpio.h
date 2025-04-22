@@ -16,24 +16,24 @@
 typedef struct GPIO_PeripheralRegisters GPIOx_Reg_t;
 
 /* GPIO pointers to base registers */
-#define GPIOA 							( (__RW GPIOx_Reg_t *const)GPIOA_BASE_ADDR )
-#define GPIOB 							( (__RW GPIOx_Reg_t *const)GPIOB_BASE_ADDR )
-#define GPIOC 							( (__RW GPIOx_Reg_t *const)GPIOC_BASE_ADDR )
+#define GPIOA 											( (__RW GPIOx_Reg_t *const)GPIOA_BASE_ADDR )
+#define GPIOB 											( (__RW GPIOx_Reg_t *const)GPIOB_BASE_ADDR )
+#define GPIOC 											( (__RW GPIOx_Reg_t *const)GPIOC_BASE_ADDR )
 
 /* Clock Enable for GPIOx */
-#define GPIOA_CLK_EN() 				( (RCC->AHB2ENR) |= (SET_ONE_BITMASK << GPIOAEN) )
-#define GPIOB_CLK_EN() 				( (RCC->AHB2ENR) |= (SET_ONE_BITMASK << GPIOBEN) )
-#define GPIOC_CLK_EN() 				( (RCC->AHB2ENR) |= (SET_ONE_BITMASK << GPIOCEN) )
+#define GPIOA_CLK_EN() 								( (RCC->AHB2ENR) |= (SET_ONE_BITMASK << RCC_GPIOAEN) )
+#define GPIOB_CLK_EN() 								( (RCC->AHB2ENR) |= (SET_ONE_BITMASK << RCC_GPIOBEN) )
+#define GPIOC_CLK_EN() 								( (RCC->AHB2ENR) |= (SET_ONE_BITMASK << RCC_GPIOCEN) )
 
 /* Clock Disable for GPIOx */
-#define GPIOA_CLK_DI() 				( (RCC->AHB2ENR) &= ~(CLEAR_ONE_BITMASK << GPIOAEN) )
-#define GPIOB_CLK_DI() 				( (RCC->AHB2ENR) &= ~(CLEAR_ONE_BITMASK << GPIOBEN) )
-#define GPIOC_CLK_DI() 				( (RCC->AHB2ENR) &= ~(CLEAR_ONE_BITMASK << GPIOCEN) )
+#define GPIOA_CLK_DI() 								( (RCC->AHB2ENR) &= ~(CLEAR_ONE_BITMASK << RCC_GPIOAEN) )
+#define GPIOB_CLK_DI() 								( (RCC->AHB2ENR) &= ~(CLEAR_ONE_BITMASK << RCC_GPIOBEN) )
+#define GPIOC_CLK_DI() 								( (RCC->AHB2ENR) &= ~(CLEAR_ONE_BITMASK << RCC_GPIOCEN) )
 
 /* GPIO Register Reset Macro Definitions */
-#define GPIOA_REG_RESET()				do { RCC->AHB2RSTR |= (1 << 0); RCC->AHB2RSTR &= ~(1 << 0); } while (0)
-#define GPIOB_REG_RESET()				do { RCC->AHB2RSTR |= (1 << 1); RCC->AHB2RSTR &= ~(1 << 1); } while (0)
-#define GPIOC_REG_RESET()				do { RCC->AHB2RSTR |= (1 << 2); RCC->AHB2RSTR &= ~(1 << 2); } while (0)
+#define GPIOA_REG_RESET()								do { RCC->AHB2RSTR |= (SET_ONE_BITMASK << RCC_GPIOARST); RCC->AHB2RSTR &= ~(CLEAR_ONE_BITMASK << RCC_GPIOARST); } while (0)
+#define GPIOB_REG_RESET()								do { RCC->AHB2RSTR |= (SET_ONE_BITMASK << RCC_GPIOBRST); RCC->AHB2RSTR &= ~(CLEAR_ONE_BITMASK << RCC_GPIOBRST); } while (0)
+#define GPIOC_REG_RESET()								do { RCC->AHB2RSTR |= (SET_ONE_BITMASK << RCC_GPIOCRST); RCC->AHB2RSTR &= ~(CLEAR_ONE_BITMASK << RCC_GPIOCRST); } while (0)
 
 /*
  * @GPIO_PERIPHERAL_REGISTERS
@@ -112,7 +112,7 @@ typedef enum GPIOOutputTypes
  */
 typedef enum GPIOOutputSpeeds
 {
-	LOW, MEDIUM, HIGH, VERY_HIGH,
+	GPIO_LOW, GPIO_MEDIUM, GPIO_HIGH, GPIO_VERY_HIGH,
 } GPIO_OSpeed_e;
 
 /*
@@ -121,7 +121,7 @@ typedef enum GPIOOutputSpeeds
  */
 typedef enum GPIOPullUpPullDown
 {
-	NONE, PULL_UP, PULL_DOWN,
+	GPIO_NONE, GPIO_PULL_UP, GPIO_PULL_DOWN,
 } GPIO_PUpDn_e;
 
 /*
@@ -140,10 +140,10 @@ typedef enum GPIOAlternateFunctions
  ******************************************************************************************/
 
 /* GPIO Clock Configuration */
-void GPIO_PeriphClkCtrl(__R GPIOx_Reg_t *const, uint8_t);
+void GPIO_PeriphClkCtrl(__R GPIOx_Reg_t *const, bool);
 
 /* GPIO Initialization */
-void GPIO_Init(__RH GPIO_Handle_t *const);
+void GPIO_Init(__R GPIO_Handle_t *const);
 void GPIO_DeInit(__RH GPIOx_Reg_t *const);					/* See RCC Peripheral Reset Register - Resets all registers */
 
 /* GPIO Data Read and Write */
@@ -154,11 +154,7 @@ void GPIO_WritePort(__W GPIOx_Reg_t *const, uint16_t);
 void GPIO_TogglePin(__RW GPIOx_Reg_t *const, uint8_t);
 
 /* GPIO Interrupt Configuration/Handling */
-void GPIO_IRQNumberConfig(uint8_t, uint8_t);
-void GPIO_IRQPriorityConfig(uint8_t, uint16_t);
-void GPIO_IRQHandler(uint8_t);
-
-uint8_t SYSCFG_EXTICR_helper_func(__R GPIOx_Reg_t *);
+void GPIO_IRQHandlerFunc(uint8_t);
 
 
 #endif /* INC_X_GPIO_H_ */

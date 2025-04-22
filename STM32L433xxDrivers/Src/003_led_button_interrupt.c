@@ -27,16 +27,16 @@ int main(void)
 
 	gpio_LED.GPIO_PinConfig.GPIO_PinNumber = PIN_THIRTEEN;
 	gpio_LED.GPIO_PinConfig.GPIO_PinMode = OUTPUT;
-	gpio_LED.GPIO_PinConfig.GPIO_PinOSpeed = HIGH;
+	gpio_LED.GPIO_PinConfig.GPIO_PinOSpeed = GPIO_HIGH;
 	gpio_LED.GPIO_PinConfig.GPIO_PinOType = PUSH_PULL;
-	gpio_LED.GPIO_PinConfig.GPIO_PinPUPDControl = NONE;
+	gpio_LED.GPIO_PinConfig.GPIO_PinPUPDControl = GPIO_NONE;
 
 	// 3. Input configurations : External push button
 	gpio_BUTTON.ptr_GPIOx = GPIOB;
 
 	gpio_BUTTON.GPIO_PinConfig.GPIO_PinNumber = PIN_TWELVE;
 	gpio_BUTTON.GPIO_PinConfig.GPIO_PinMode = INTERRUPT_FT;
-	gpio_BUTTON.GPIO_PinConfig.GPIO_PinPUPDControl = PULL_UP;
+	gpio_BUTTON.GPIO_PinConfig.GPIO_PinPUPDControl = GPIO_PULL_UP;
 
 	// 4. GPIO Clock Initialization
 	GPIO_PeriphClkCtrl((__R GPIOx_Reg_t *const)gpio_LED.ptr_GPIOx, ENABLE);
@@ -47,22 +47,22 @@ int main(void)
 	GPIO_Init(&(gpio_BUTTON));
 
 	// 6. IRQ Configurations
-	GPIO_IRQNumberConfig(EXTI15_10, ENABLE);
-	GPIO_IRQPriorityConfig(EXTI15_10, 15);
+	NVIC_IRQNumberConfig(IRQ_EXTI15_10, ENABLE);
+	NVIC_IRQPriorityConfig(IRQ_EXTI15_10, 15);
 
 	for (;;);
 }
 
 void delay(void)
 {
-	for (uint32_t i = 0; i < 400000; ++i);
+	for (uint32_t i = 0; i < 200000; ++i);
 }
 
 void EXTI15_10_IRQHandler(void)
 {
+	delay();
 	GPIO_IRQHandler(PIN_TWELVE);
 	GPIO_TogglePin(GPIOC, PIN_THIRTEEN);
-	delay();
 }
 
 
