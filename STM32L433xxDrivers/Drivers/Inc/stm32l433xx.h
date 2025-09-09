@@ -21,7 +21,7 @@
  * ARM Cortex-Mx Processor Nested Vector Interrupt Controller (NVIC) Register Addresses, from user guide
  */
 
-/* NVIC Interrupt Set-enable Register memory locations */
+/* NVIC Interrupt Set-Enable Register memory locations */
 // 7 available but using 4 because 64 < IRQ positions < 96
 #define NVIC_ISERx_BASE_ADDR				0xE000E100UL
 #define NVIC_ISER0							( (__RW uint32_t *)(NVIC_ISERx_BASE_ADDR + 0x0UL) )
@@ -29,7 +29,7 @@
 #define NVIC_ISER2							( (__RW uint32_t *)(NVIC_ISERx_BASE_ADDR + 0x8UL) )
 #define NVIC_ISER3							( (__RW uint32_t *)(NVIC_ISERx_BASE_ADDR + 0xCUL) )
 
-/* NVIC Interrupt Clear-enable Register memory locations */
+/* NVIC Interrupt Clear-Enable Register memory locations */
 #define NVIC_ICERx_BASE_ADDR				0xE000E180UL
 #define NVIC_ICER0							( (__RW uint32_t *)(NVIC_ICERx_BASE_ADDR + 0x0UL) )
 #define NVIC_ICER1							( (__RW uint32_t *)(NVIC_ICERx_BASE_ADDR + 0x4UL) )
@@ -38,14 +38,14 @@
 
 /* NVIC Interrupt Priority Register memory locations */
 #define NVIC_IPRx_BASE_ADDR				0xE000E400UL
-#define NO_PR_BITS_IMPLEMENTED			(uint8_t) 4				/* Number of implemented/usable IPR IRQ priority bits */
+#define NUM_PR_BITS_IMPLEMENTED			(uint8_t) 4				/* Number of implemented/usable IPR IRQ priority bits */
 
 
 /* Macros to be used with registers denoting contextual read/write access */
 #define __RW								volatile				/* software readable and writable */
 #define __R								const					/* software read only, will not change */
 #define __RH								volatile const			/* software read only, may be written by hardware */
-#define __W								volatile				/* software write only */
+#define __W								__RW					/* software write only */
 
 
 /* Base Addresses of the MCU Internal Memories */
@@ -227,16 +227,24 @@
 #define DISABLE							(bool) 0
 #define SET								ENABLE
 #define RESET								DISABLE
-#define CLEAR_ONE_BITMASK					0x1UL
-#define CLEAR_TWO_BITMASK					0x3UL
-#define CLEAR_FOUR_BITMASK				0xFUL
+#define CLEAR_ONE_BITMASK					0x1U
+#define CLEAR_TWO_BITMASK					0x3U
+#define CLEAR_FOUR_BITMASK				0xFU
 #define SET_ONE_BITMASK					CLEAR_ONE_BITMASK
 #define SET_TWO_BITMASK					CLEAR_TWO_BITMASK
 #define SET_FOUR_BITMASK					CLEAR_FOUR_BITMASK
 #define CHECK_ONE_BITMASK					CLEAR_ONE_BITMASK
 #define CHECK_TWO_BITMASK					CLEAR_TWO_BITMASK
 #define SINGLE_BITMASK					CLEAR_ONE_BITMASK
-#define __weak								__attribute__((weak))
+
+/* Pointers to globally-used (peripheral) registers */
+#define RCC								( (__RW RCC_Reg_t *const)RCC_BASE_ADDR )
+
+#define EXTI								( (__RW EXTI_Reg_t *const)EXTI_BASE_ADDR )
+
+#define SYSCFG								( (__RW SYSCFG_Reg_t *const)SYSCFG_BASE_ADDR )
+
+#define NVIC_IPRx							( (__RW uint32_t *const)NVIC_IPRx_BASE_ADDR )
 
 
 /********************************** PERIPHERAL REGISTER STRUCTURE DEFINITIONS **********************************/
@@ -254,42 +262,52 @@ typedef struct RCC_PeripheralRegisters
 	__RW uint32_t CFGR;						/* RCC Clock Configuration Register */
 	__RW uint32_t PLLCFGR;					/* RCC PLL Configuration Register */
 	__RW uint32_t PLLSAI1CFGR;				/* RCC PLLSAI1 Configuration Register */
-	uint32_t RESERVED1;						/* Reserved Offset 0x14 - 0x17 */
+	const uint32_t RESERVED1;				/* Reserved Offset 0x14 - 0x17 */
 	__RW uint32_t CIER;						/* RCC Clock Interrupt Enable Register */
 	__RH uint32_t CIFR;						/* RCC Clock Interrupt Flag Register */
 	__W  uint32_t CICR;						/* RCC Clock Interrupt Clear Register */
-	uint32_t RESERVED2;						/* Reserved Offset 0x24 - 0x27 */
+	const uint32_t RESERVED2;				/* Reserved Offset 0x24 - 0x27 */
 	__RW uint32_t AHB1RSTR;					/* RCC AHB1 Peripheral Reset Register */
 	__RW uint32_t AHB2RSTR;					/* RCC AHB2 Peripheral Reset Register */
 	__RW uint32_t AHB3RSTR;					/* RCC AHB3 Peripheral Reset Register - QuadSPI */
-	uint32_t RESERVED3;						/* Reserved Offset 0x34 - 0x37 */
+	const uint32_t RESERVED3;				/* Reserved Offset 0x34 - 0x37 */
 	__RW uint32_t APB1RSTR1;				/* RCC APB1 Peripheral Reset Register 1 */
 	__RW uint32_t APB1RSTR2;				/* RCC APB1 Peripheral Reset Register 2 */
 	__RW uint32_t APB2RSTR;					/* RCC APB2 Peripheral Reset Register */
-	uint32_t RESERVED4;						/* Reserved Offset 0x44 - 0x47 */
+	const uint32_t RESERVED4;				/* Reserved Offset 0x44 - 0x47 */
 	__RW uint32_t AHB1ENR;					/* RCC AHB1 Peripheral Clock Enable Register */
 	__RW uint32_t AHB2ENR;					/* RCC AHB2 Peripheral Clock Enable Register */
 	__RW uint32_t AHB3ENR;					/* RCC AHB3 Peripheral Clock Enable Register - QuadSPI */
-	uint32_t RESERVED5;						/* Reserved Offset 0x54 - 0x57 */
+	const uint32_t RESERVED5;				/* Reserved Offset 0x54 - 0x57 */
 	__RW uint32_t APB1ENR1;					/* RCC APB1 Peripheral Clock Enable Register 1 */
 	__RW uint32_t APB1ENR2;					/* RCC APB1 Peripheral Clock Enable Register 2 */
 	__RW uint32_t APB2ENR;					/* RCC APB2 Peripheral Clock Enable Register */
-	uint32_t RESERVED6;						/* Reserved Offset 0x64 - 0x67 */
+	const uint32_t RESERVED6;				/* Reserved Offset 0x64 - 0x67 */
 	__RW uint32_t AHB1SMENR;				/* RCC AHB1 Peripheral Clocks Enable in Sleep and Stop Modes Register */
 	__RW uint32_t AHB2SMENR;				/* RCC AHB2 Peripheral Clocks Enable in Sleep and Stop Modes Register */
 	__RW uint32_t AHB3SMENR;				/* RCC AHB3 Peripheral Clocks Enable in Sleep and Stop Modes Register */
-	uint32_t RESERVED7;						/* Reserved Offset 0x74 - 0x77 */
+	const uint32_t RESERVED7;				/* Reserved Offset 0x74 - 0x77 */
 	__RW uint32_t APB1SMENR1;				/* RCC APB1 Peripheral Clocks Enable in Sleep and Stop Modes Register 1 */
 	__RW uint32_t APB1SMENR2;				/* RCC APB1 Peripheral Clocks Enable in Sleep and Stop Modes Register 2 */
 	__RW uint32_t APB2SMENR;				/* RCC APB2 Peripheral Clocks Enable in Sleep and Stop Modes Register */
-	uint32_t RESERVED8;						/* Reserved Offset 0x84 - 0x87 */
+	const uint32_t RESERVED8;				/* Reserved Offset 0x84 - 0x87 */
 	__RW uint32_t CCIPR;					/* RCC Peripherals Independent Clock Configuration Register */
-	uint32_t RESERVED9;						/* Reserved Offset 0x8C - 0x8F */
+	const uint32_t RESERVED9;				/* Reserved Offset 0x8C - 0x8F */
 	__RW uint32_t BDCR;						/* RCC Backup Domain Control Register */
 	__RW uint32_t CSR;						/* RCC Control/Status Register, [1] - R */
-	__RH uint32_t CRRCR;					/* RCC Clock Recovery RC Register, [0] - RW*/
+	__RH uint32_t CRRCR;					/* RCC Clock Recovery RC Register, [0] - RW */
 	__RW uint32_t CCIPR2;					/* RCC Peripherals Independent Clock Configuration Register */
 } RCC_Reg_t;
+
+/*
+ * @RCC_PERIPHERAL_MAPPER
+ * Struct that maps a device peripheral to its clock flag position
+ */
+typedef struct RCC_PeripheralMapper
+{
+	uint8_t RCC_Bus;						/* Bus on which the peripheral is latched on to */
+	uint8_t RCC_BitPos;						/* Zero-based index of the peripheral's flag on RCC's clock configuration registers */
+} RCC_Periph_t;
 
 /*
  * @SYSCFG_PERIPHERAL_REGISTERS
@@ -318,7 +336,7 @@ typedef struct EXTI_PeripheralRegisters
 	__RW uint32_t FTSR1;					/* EXTI Falling Trigger Selection Register 1 */
 	__RW uint32_t SWIER1;					/* EXTI Software Interrupt Event Register 1 */
 	__RW uint32_t PR1;						/* EXTI Pending Register 1 */
-	uint64_t RESERVED1;						/* Reserved Offset 0x18 - 0x1F */
+	const uint64_t RESERVED1;				/* Reserved Offset 0x18 - 0x1F */
 	__RW uint32_t IMR2;						/* EXTI Interrupt Mask Register 2 */
 	__RW uint32_t EMR2;						/* EXTI Event Mask Register 2 */
 	__RW uint32_t RTSR2;					/* EXTI Rising Trigger Selection Register 2 */
@@ -330,82 +348,52 @@ typedef struct EXTI_PeripheralRegisters
 /* SPIx_Reg_t was here */
 
 /*
- * @RCC_AHB2_ENABLE_FLAGS
- * RCC AHB2 peripheral clock enable flag positions
+ * @RCC_PERIPHERAL_BUSES
+ * Peripheral Buses configured by the Reset and Clock Control Peripheral
  */
-typedef enum RCC_AHB2_EnableRegister
+typedef enum RCC_PeripheralBuses
 {
-	RCC_GPIOAEN, RCC_GPIOBEN, RCC_GPIOCEN, RCC_ADCEN = 13, RCC_RNGEN = 18,
-} RCC_AHB2ENR_e;
+	RCC_AHB1, RCC_AHB2, RCC_AHB3, RCC_APB1_R1, RCC_APB1_R2, RCC_APB2,
+} RCC_PeriphBus_e;
 
 /*
- * @RCC_AHB2_RESET_FLAGS
- * RCC AHB2 peripheral reset flag positions
+ * @RCC_AHB2_PERIPHERALS
+ * RCC AHB2 peripheral clock flag positions
  */
-typedef enum RCC_AHB2_ResetRegister
+typedef enum RCC_AHB2_Peripherals
 {
-	RCC_GPIOARST, RCC_GPIOBRST, RCC_GPIOCRST, RCC_ADCRST = 13, RCC_RNGRST = 18,
-} RCC_AHB2RSTR_e;
+	RCC_GPIOA, RCC_GPIOB, RCC_GPIOC, RCC_ADC = 13, RCC_RNG = 18,
+} RCC_AHB2_e;
 
 /*
- * @RCC_APB1_R1_ENABLE_FLAGS
- * RCC APB1 R1 peripheral enable flag positions
+ * @RCC_APB1_R1_PERIPHERALS
+ * RCC APB1 R1 peripheral flag positions
  */
-typedef enum RCC_APB1_R1_EnableRegister
+typedef enum RCC_APB1_R1_Peripherals
 {
-	RCC_TIM2EN, RCC_TIM3EN, RCC_TIM6EN = 4, RCC_TIM7EN, RCC_LCDEN = 9, RCC_RTCAPBEN, RCC_WWDGEN, RCC_SPI2EN = 14,
-	RCC_SPI3EN = 15, RCC_USART2EN = 17, RCC_USART3EN, RCC_I2C1EN = 21, RCC_I2C2EN, RCC_I2C3EN, RCC_CRSEN,
-	RCC_CAN1EN, RCC_USBFSEN, RCC_PWREN = 28, RCC_DAC1EN, RCC_OPAMPEN, RCC_LPTIM1EN,
-} RCC_APB1ENR1_e;
+	RCC_TIM2, RCC_TIM3, RCC_TIM6 = 4, RCC_TIM7, RCC_LCD = 9, RCC_RTCAPB, RCC_WWDG, RCC_SPI2 = 14,
+	RCC_SPI3 = 15, RCC_USART2 = 17, RCC_USART3, RCC_I2C1 = 21, RCC_I2C2, RCC_I2C3, RCC_CRS,
+	RCC_CAN1, RCC_USBFS, RCC_PWR = 28, RCC_DAC1, RCC_OPAMP, RCC_LPTIM1,
+} RCC_APB1R1_e;
 
 /*
- * @RCC_APB1_R1_RESET_FLAGS
- * RCC APB1 R1 peripheral reset flag positions
+ * @RCC_APB1_R2_PERIPHERALS
+ * RCC APB1 R2 peripheral flag positions
  */
-typedef enum RCC_APB1_R1_ResetRegister
+typedef enum RCC_APB1_R2_Peripherals
 {
-	RCC_TIM2RST, RCC_TIM3RST, RCC_TIM6RST = 4, RCC_TIM7RST, RCC_LCDRST = 9, RCC_RTCAPBRST, RCC_WWDGRST,
-	RCC_SPI2RST = 14, RCC_SPI3RST = 15, RCC_USART2RST = 17, RCC_USART3RST, RCC_I2C1RST = 21, RCC_I2C2RST,
-	RCC_I2C3RST, RCC_CRSRST, RCC_CAN1RST, RCC_USBFSRST, RCC_PWRRST = 28, RCC_DAC1RST, RCC_OPAMPRST, RCC_LPTIM1RST,
-} RCC_APB1RSTR1_e;
+	RCC_LPUART1, RCC_SWPMI1 = 2, RCC_LPTIM2 = 5,
+} RCC_APB1R2_e;
 
 /*
- * @RCC_APB1_R2_ENABLE_FLAGS
- * RCC APB1 R2 peripheral enable flag positions
+ * @RCC_APB2_PERIPHERALS
+ * RCC APB2 peripheral flag positions
  */
-typedef enum RCC_APB1_R2_EnableRegister
+typedef enum RCC_APB2_Peripherals
 {
-	RCC_LPUART1EN, RCC_SWPMI1EN = 2, RCC_LPTIM2EN = 5,
-} RCC_APB1ENR2_e;
-
-/*
- * @RCC_APB1_R2_RESET_FLAGS
- * RCC APB1 R2 peripheral reset flag positions
- */
-typedef enum RCC_APB1_R2_ResetRegister
-{
-	RCC_LPUART1RST, RCC_SWPMI1RST = 2, RCC_LPTIM2RST = 5,
-} RCC_APB1RSTR2_e;
-
-/*
- * @RCC_APB2_ENABLE_FLAGS
- * RCC APB2 peripheral enable flag positions
- */
-typedef enum RCC_APB2_EnableRegister
-{
-	RCC_SYSCFGEN, RCC_FWEN = 7, RCC_SDMMC1EN = 10, RCC_TIM1EN, RCC_SPI1EN, RCC_USART1EN = 14, RCC_TIM15EN = 16,
-	RCC_TIM16EN, RCC_SAIEN = 21, RCC_DFSDM1EN = 24,
-} RCC_APB2ENR_e;
-
-/*
- * @RCC_APB2_RESET_FLAGS
- * RCC APB2 peripheral reset flag positions
- */
-typedef enum RCC_APB2_ResetRegister
-{
-	RCC_SYSCFGRST, RCC_FWRST = 7, RCC_SDMMC1RST = 10, RCC_TIM1RST, RCC_SPI1RST, RCC_USART1RST = 14,
-	RCC_TIM15RST = 16, RCC_TIM16RST, RCC_SAIRST = 21, RCC_DFSDM1RST = 24,
-} RCC_APB2RSTR_e;
+	RCC_SYSCFG, RCC_FW = 7, RCC_SDMMC1 = 10, RCC_TIM1, RCC_SPI1, RCC_USART1 = 14,
+	RCC_TIM15 = 16, RCC_TIM16, RCC_SAI = 21, RCC_DFSDM1 = 24,
+} RCC_APB2_e;
 
 /*
  * @NVIC_IRQ_NUMBERS
@@ -414,30 +402,141 @@ typedef enum RCC_APB2_ResetRegister
 typedef enum NVIC_IRQ_Numbers
 {
 	IRQ_EXTI0 = 6, IRQ_EXTI1, IRQ_EXTI2, IRQ_EXTI3, IRQ_EXTI4, IRQ_EXTI9_5 = 23,
-	IRQ_EXTI15_10 = 40, IRQ_SPI1 = 35, IRQ_SPI2 = 36, IRQ_SPI3 = 51,
+	IRQ_SPI1 = 35, IRQ_SPI2 = 36, IRQ_EXTI15_10 = 40, IRQ_SPI3 = 51,
 } NVIC_IRQNum_e;
 
+/*
 
-/* GPIO base register pointers were here */
+ * @fn						- RCC_ClockEnable
+ *
+ * @brief					- this function enables the peripheral clock for the given peripheral, through RCC
+ *
+ * @param periph			- struct containing the peripheral's mapping to RCC clock registers
+ *
+ * @return					- none
+ *
+ * @Note					- inline function definition
 
-/* Pointers to globally-used (peripheral) registers */
-#define RCC								( (__RW RCC_Reg_t *const)RCC_BASE_ADDR )
+ */
+static inline void RCC_EnableClock(RCC_Periph_t periph)
+{
+	switch (periph.RCC_Bus)
+	{
+		case RCC_AHB2:
+			RCC->AHB2ENR |= (SET_ONE_BITMASK << periph.RCC_BitPos);
+			(void)RCC->AHB2ENR;
+			break;
 
-#define EXTI								( (__RW EXTI_Reg_t *const)EXTI_BASE_ADDR )
+		case RCC_APB1_R1:
+			RCC->APB1ENR1 |= (SET_ONE_BITMASK << periph.RCC_BitPos);
+			(void)RCC->APB1ENR1;
+			break;
 
-#define SYSCFG								( (__RW SYSCFG_Reg_t *const)SYSCFG_BASE_ADDR )
+		case RCC_APB1_R2:
+			RCC->APB1ENR2 |= (SET_ONE_BITMASK << periph.RCC_BitPos);
+			(void)RCC->APB1ENR2;
+			break;
 
-#define NVIC_IPRx							( (__RW uint32_t *const)NVIC_IPRx_BASE_ADDR )
+		case RCC_APB2:
+			RCC->APB2ENR |= (SET_ONE_BITMASK << periph.RCC_BitPos);
+			(void)RCC->APB2ENR;
+			break;
 
-/* SPI base register pointers were here */
+		default:
+			break;
+	}
+}
 
-/* Peripheral Clock Enable/Disable Macro Definitions */
+/*
 
-/* GPIO clock enable/disable macros were here */
+ * @fn						- RCC_ClockDisable
+ *
+ * @brief					- this function disables the peripheral clock for the given peripheral, through RCC
+ *
+ * @param periph			- struct containing the peripheral's mapping to RCC clock registers
+ *
+ * @return					- none
+ *
+ * @Note					- inline function definition
 
-/* I2C clock enable/disable macros were here */
+ */
+static inline void RCC_DisableClock(RCC_Periph_t periph)
+{
+	switch (periph.RCC_Bus)
+	{
+		case RCC_AHB2:
+			RCC->AHB2ENR &= ~(CLEAR_ONE_BITMASK << periph.RCC_BitPos);
+			(void)RCC->AHB2ENR;
+			break;
 
-/* SPI clock enable/disable macros were here */
+		case RCC_APB1_R1:
+			RCC->APB1ENR1 &= ~(CLEAR_ONE_BITMASK << periph.RCC_BitPos);
+			(void)RCC->APB1ENR1;
+			break;
+
+		case RCC_APB1_R2:
+			RCC->APB1ENR2 &= ~(CLEAR_ONE_BITMASK << periph.RCC_BitPos);
+			(void)RCC->APB1ENR2;
+			break;
+
+		case RCC_APB2:
+			RCC->APB2ENR &= ~(CLEAR_ONE_BITMASK << periph.RCC_BitPos);
+			(void)RCC->APB2ENR;
+			break;
+
+		default:
+			break;
+	}
+}
+
+/*
+
+ * @fn						- RCC_ClockDisable
+ *
+ * @brief					- this function disables the peripheral clock for the given peripheral, through RCC
+ *
+ * @param periph			- struct containing the peripheral's mapping to RCC clock registers
+ *
+ * @return					- none
+ *
+ * @Note					- inline function definition
+
+ */
+static inline void RCC_ResetRegister(RCC_Periph_t periph)
+{
+	switch (periph.RCC_Bus)
+	{
+		case RCC_AHB2:
+			RCC->AHB2RSTR |= (SET_ONE_BITMASK << periph.RCC_BitPos);
+			RCC->AHB2RSTR &= ~(CLEAR_ONE_BITMASK << periph.RCC_BitPos);
+			(void)RCC->AHB2RSTR;
+			break;
+
+		case RCC_APB1_R1:
+			RCC->APB1RSTR1 |= (SET_ONE_BITMASK << periph.RCC_BitPos);
+			RCC->APB1RSTR1 &= ~(CLEAR_ONE_BITMASK << periph.RCC_BitPos);
+			(void)RCC->APB1RSTR1;
+			break;
+
+		case RCC_APB1_R2:
+			RCC->APB1RSTR2 |= (SET_ONE_BITMASK << periph.RCC_BitPos);
+			RCC->APB1RSTR2 &= ~(CLEAR_ONE_BITMASK << periph.RCC_BitPos);
+			(void)RCC->APB1RSTR2;
+			break;
+
+		case RCC_APB2:
+			RCC->APB2RSTR |= (SET_ONE_BITMASK << periph.RCC_BitPos);
+			RCC->APB2RSTR &= ~(CLEAR_ONE_BITMASK << periph.RCC_BitPos);
+			(void)RCC->APB2RSTR;
+			break;
+
+		default:
+			break;
+	}
+}
+
+static const RCC_Periph_t RCC_MAP_SYSCFG = { .RCC_BitPos = RCC_SYSCFG, .RCC_Bus = RCC_APB2 };
+
 
 /* Clock Enable for U(S)ARTx */
 #define USART1_CLK_EN()					( (RCC->APB2ENR) |= (SET_ONE_BITMASK << RCC_USART1EN) )
@@ -451,17 +550,9 @@ typedef enum NVIC_IRQ_Numbers
 #define USART3_CLK_DI()					( (RCC->APB1ENR1) &= ~(CLEAR_ONE_BITMASK << RCC_USART3EN) )
 #define LPUART_CLK_DI()					( (RCC->APB1ENR2) &= ~(CLEAR_ONE_BITMASK << RCC_LPUART1EN) )
 
-/* Clock Enable for SYSCFG */
-#define SYSCFG_CLK_EN()					( (RCC->APB2ENR) |= (SET_ONE_BITMASK << RCC_SYSCFGEN) )
-/* Clock Disable for SYSCFG */
-#define SYSCFG_CLK_DI()					( (RCC->APB2ENR) &= ~(CLEAR_ONE_BITMASK << RCC_SYSCFGEN) )
+/* Function Declarations */
 
-/* GPIO register reset macros were here */
-
-/* SPI register reset macros were here */
-
-
-uint8_t MCU_GetFlagStatus(uint32_t, uint8_t, uint8_t);
+int8_t MCU_GetFlagStatus(uint32_t, uint8_t, uint8_t);
 void NVIC_IRQPositionConfig(uint8_t, bool);
 void NVIC_IRQPriorityConfig(uint8_t, uint16_t);
 

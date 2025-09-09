@@ -23,7 +23,7 @@
  * @Note						- none
 
  */
-uint8_t MCU_GetFlagStatus(uint32_t register_contents, uint8_t flag_length, uint8_t offset)
+int8_t MCU_GetFlagStatus(uint32_t register_contents, uint8_t flag_length, uint8_t offset)
 {
 	if (flag_length == 1) return ( (register_contents >> offset) & CHECK_ONE_BITMASK );
 	else if (flag_length == 2) return ( (register_contents >> offset) & CHECK_TWO_BITMASK );
@@ -111,7 +111,7 @@ void NVIC_IRQPriorityConfig(uint8_t IRQPosition, uint16_t IRQPriority)
 	const uint8_t priority_irq_offset = IRQPosition % 4;
 
 	// Define a shift offset, considering each priority takes 1 byte, and only the 4 MSBs are implemented
-	const uint8_t shift_amount = (priority_irq_offset * 8) + NO_PR_BITS_IMPLEMENTED;
+	const uint8_t shift_amount = (uint8_t)(priority_irq_offset * 8) + NUM_PR_BITS_IMPLEMENTED;
 
 	/* Remember underlying working of pointer arithmetic, NVIC is already a pointer to 4-byte data
 	 * hence no need multiply by 4 */

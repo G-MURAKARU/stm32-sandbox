@@ -2,7 +2,7 @@
  * 002_led_button.c
  *
  *  Created on: Apr 4, 2025
- *      Author: OMEN 16
+ *      Author: MURAKARU
  */
 
 #include "stm32l433xx.h"

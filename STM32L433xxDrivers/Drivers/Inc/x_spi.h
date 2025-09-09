@@ -11,14 +11,19 @@
 
 #include "stm32l433xx.h"
 
-
 /* Structure forward declarations */
 typedef struct SPI_PeripheralRegisters SPIx_Reg_t;
 
 /* Pointers to SPI base addresses */
-#define SPI1											( (__RW SPIx_Reg_t *const)SPI1_BASE_ADDR )
-#define SPI2											( (__RW SPIx_Reg_t *const)SPI2_BASE_ADDR )
-#define SPI3											( (__RW SPIx_Reg_t *const)SPI3_BASE_ADDR )
+#define SPI1											( (SPIx_Reg_t *const)SPI1_BASE_ADDR )
+#define SPI2											( (SPIx_Reg_t *const)SPI2_BASE_ADDR )
+#define SPI3											( (SPIx_Reg_t *const)SPI3_BASE_ADDR )
+
+/* RCC Mapping structs for SPIx */
+
+static const RCC_Periph_t RCC_MAP_SPI1 = { .RCC_BitPos = RCC_SPI1, .RCC_Bus = RCC_APB2 };
+static const RCC_Periph_t RCC_MAP_SPI2 = { .RCC_BitPos = RCC_SPI2, .RCC_Bus = RCC_APB1_R1 };
+static const RCC_Periph_t RCC_MAP_SPI3 = { .RCC_BitPos = RCC_SPI3, .RCC_Bus = RCC_APB1_R1 };
 
 /* Clock Enable for SPIx */
 #define SPI1_CLK_EN()									( (RCC->APB2ENR) |= (SET_ONE_BITMASK << RCC_SPI1EN) )
@@ -76,7 +81,7 @@ typedef struct SPIPeripheralConfiguration
  */
 typedef struct SPIHandleStructure
 {
-	__RW SPIx_Reg_t *ptr_SPIx;							/* Holds the base address of the SPI (1/2/3) peripheral */
+	SPIx_Reg_t 	 *ptr_SPIx;							/* Holds the base address of the SPI (1/2/3) peripheral */
 	SPI_Config_t 	  SPI_Config;						/*  */
 	__RW uint8_t    *ptr_TX_Data;						/* Points to the transmit data buffer's storage location */
 	__RW uint8_t    *ptr_RX_Data;						/* Points to the receive data buffer's storage location */
@@ -92,7 +97,8 @@ typedef struct SPIHandleStructure
  */
 typedef enum SPIControlRegister1
 {
-	CPHA, CPOL, SPI_MSTR, SPI_BAUD, SPI_ENABLE = 6, SPI_LSB_FIRST, SSI, SSM, SPI_RXONLY, SPI_CRCL, SPI_CRCNEXT, SPI_CRCEN, SPI_BIDIOE, SPI_BIDIMODE,
+	SPI_CPHA, SPI_CPOL, SPI_MSTR, SPI_BAUD, SPI_ENABLE = 6, SPI_LSB_FIRST, SPI_SSI,
+	SPI_SSM, SPI_RXONLY, SPI_CRCL, SPI_CRCNEXT, SPI_CRCEN, SPI_BIDIOE, SPI_BIDIMODE,
 } SPI_CR1_e;
 
 /*
@@ -101,7 +107,8 @@ typedef enum SPIControlRegister1
  */
 typedef enum SPIControlRegister2
 {
-	SPI_RXDMAEN, SPI_TXDMAEN, SSOE, NSSP, SPI_FRF, SPI_ERRIE, SPI_RXNEIE, SPI_TXEIE, SPI_DATASIZE, SPI_FRXTH = 12, SPI_LDMA_RX, SPI_LDMA_TX,
+	SPI_RXDMAEN, SPI_TXDMAEN, SPI_SSOE, SPI_NSSP, SPI_FRF, SPI_ERRIE, SPI_RXNEIE,
+	SPI_TXEIE, SPI_DATASIZE, SPI_FRXTH = 12, SPI_LDMA_RX, SPI_LDMA_TX,
 } SPI_CR2_e;
 
 typedef enum SPIStatusRegister
@@ -133,7 +140,7 @@ typedef enum SPIBusCommsConfigModes
  */
 typedef enum SPIClockPrescalers
 {
-	PRE_2, PRE_4, PRE_8, PRE_16, PRE_32, PRE_64, PRE_128, PRE_256,
+	SPI_PRE_2, SPI_PRE_4, SPI_PRE_8, SPI_PRE_16, SPI_PRE_32, SPI_PRE_64, SPI_PRE_128, SPI_PRE_256,
 } SPI_Clock_e;
 
 /*
@@ -142,8 +149,8 @@ typedef enum SPIClockPrescalers
  */
 typedef enum SPIDataFrameFormats
 {
-	FR_4BIT = 3, FR_5BIT, FR_6BIT, FR_7BIT, FR_8BIT, FR_9BIT, FR_10BIT,
-	FR_11BIT, FR_12BIT, FR_13BIT, FR_14BIT, FR_15BIT, FR_16BIT,
+	SPI_FR_4BIT = 3, SPI_FR_5BIT, SPI_FR_6BIT, SPI_FR_7BIT, SPI_FR_8BIT, SPI_FR_9BIT, SPI_FR_10BIT,
+	SPI_FR_11BIT, SPI_FR_12BIT, SPI_FR_13BIT, SPI_FR_14BIT, SPI_FR_15BIT, SPI_FR_16BIT,
 } SPI_Frame_e;
 
 /*
@@ -152,7 +159,7 @@ typedef enum SPIDataFrameFormats
  */
 typedef enum SPIClockPolarity
 {
-	CPOL_LOW, CPOL_HIGH
+	SPI_CPOL_LOW, SPI_CPOL_HIGH
 } SPI_CPOL_e;
 
 /*
@@ -161,7 +168,7 @@ typedef enum SPIClockPolarity
  */
 typedef enum SPIClockPhase
 {
-	CPHA_LOW, CPHA_HIGH
+	SPI_CPHA_LOW, SPI_CPHA_HIGH
 } SPI_CPHA_e;
 
 /*
@@ -185,24 +192,24 @@ typedef enum SPIApplicationEvents
 /* Macros for disable/enable flags */
 
 // Software slave management mode
-#define SSM_DISABLE									DISABLE
-#define SSM_ENABLE										ENABLE
+#define SPI_SSM_DISABLE								DISABLE
+#define SPI_SSM_ENABLE								ENABLE
 
 // Internal slave select mode
-#define SSI_DISABLE									DISABLE
-#define SSI_ENABLE										ENABLE
+#define SPI_SSI_DISABLE								DISABLE
+#define SPI_SSI_ENABLE								ENABLE
 
 // Cyclic redundancy check mode
 #define SPI_CRC_DISABLE								DISABLE
 #define SPI_CRC_ENABLE								ENABLE
 
 // NSS pulse management mode
-#define NSSP_DISABLE									DISABLE
-#define NSSP_ENABLE									ENABLE
+#define SPI_NSSP_DISABLE								DISABLE
+#define SPI_NSSP_ENABLE								ENABLE
 
 // Slave select output enable mode
-#define SSOE_DISABLE									DISABLE
-#define SSOE_ENABLE									ENABLE
+#define SPI_SSOE_DISABLE								DISABLE
+#define SPI_SSOE_ENABLE								ENABLE
 
 /*
 
@@ -223,23 +230,23 @@ void SPI_DeInit(__RH SPIx_Reg_t *const);					/* See RCC Peripheral Reset Registe
 /* SPI Data Read and Write */
 
 // Blocking APIs
-void SPI_DataSend(__RW SPIx_Reg_t *const, __R uint8_t *volatile, int32_t, uint8_t);
-void SPI_DataReceive(__RW SPIx_Reg_t *const, __RW uint8_t *volatile, int32_t, uint8_t);
+void SPI_DataSend(SPIx_Reg_t *const, __R uint8_t *volatile, int32_t, uint8_t);
+void SPI_DataReceive(SPIx_Reg_t *const, __RW uint8_t *volatile, int32_t, uint8_t);
 
 // Non-Blocking APIs
-bool SPI_DataSend_IT(__RW SPI_Handle_t *const, __R uint8_t *const, int32_t);
-bool SPI_DataReceive_IT(__RW SPI_Handle_t *const, __R uint8_t *const, int32_t);
+bool SPI_DataSend_IT(SPI_Handle_t *const, __R uint8_t *const, int32_t);
+bool SPI_DataReceive_IT(SPI_Handle_t *const, __R uint8_t *const, int32_t);
 
 /* SPI Interrupt Configuration/Handling */
 void SPI_IRQHandlerFunc(__R SPI_Handle_t *const);
 
 /* Other SPI Control Peripherals */
-void SPI_Control(__W SPIx_Reg_t *const, bool);
-void SPI_CloseTransmission(__RW SPI_Handle_t *const);
-void SPI_CloseReception(__RW SPI_Handle_t *const);
+void SPI_Control(SPIx_Reg_t *const, bool);
+void SPI_CloseTransmission(SPI_Handle_t *const);
+void SPI_CloseReception(SPI_Handle_t *const);
 
 /* Application functions */
-void SPI_ApplicationEventCallback(__RW SPI_Handle_t *const, uint8_t);
+void SPI_ApplicationEventCallback(SPI_Handle_t *const, uint8_t);
 
 
 #endif /* INC_X_SPI_H_ */

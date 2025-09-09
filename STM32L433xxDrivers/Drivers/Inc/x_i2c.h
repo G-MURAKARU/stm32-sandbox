@@ -15,24 +15,16 @@
 typedef struct I2C_PeripheralRegisters I2Cx_Reg_t;
 
 /* Pointers to I2C base addresses */
-#define I2C1											( (__RW I2Cx_Reg_t *const)I2C1_BASE_ADDR )
-#define I2C2											( (__RW I2Cx_Reg_t *const)I2C2_BASE_ADDR )
-#define I2C3											( (__RW I2Cx_Reg_t *const)I2C3_BASE_ADDR )
+#define I2C1											( (I2Cx_Reg_t *const)I2C1_BASE_ADDR )
+#define I2C2											( (I2Cx_Reg_t *const)I2C2_BASE_ADDR )
+#define I2C3											( (I2Cx_Reg_t *const)I2C3_BASE_ADDR )
 
-/* Clock Enable for I2Cx */
-#define I2C1_CLK_EN()									( (RCC->APB1ENR1) |= (SET_ONE_BITMASK << RCC_I2C1EN) )
-#define I2C2_CLK_EN()									( (RCC->APB1ENR1) |= (SET_ONE_BITMASK << RCC_I2C2EN) )
-#define I2C3_CLK_EN()									( (RCC->APB1ENR1) |= (SET_ONE_BITMASK << RCC_I2C3EN) )
+/* RCC Mapping structs for I2Cx */
 
-/* Clock Disable for I2Cx */
-#define I2C1_CLK_DI()									( (RCC->APB1ENR1) &= ~(CLEAR_ONE_BITMASK << RCC_I2C1EN) )
-#define I2C2_CLK_DI()									( (RCC->APB1ENR1) &= ~(CLEAR_ONE_BITMASK << RCC_I2C2EN) )
-#define I2C3_CLK_DI()									( (RCC->APB1ENR1) &= ~(CLEAR_ONE_BITMASK << RCC_I2C3EN) )
+static const RCC_Periph_t RCC_MAP_I2C1 = { .RCC_BitPos = RCC_I2C1, .RCC_Bus = RCC_APB1_R1 };
+static const RCC_Periph_t RCC_MAP_I2C2 = { .RCC_BitPos = RCC_I2C2, .RCC_Bus = RCC_APB1_R1 };
+static const RCC_Periph_t RCC_MAP_I2C3 = { .RCC_BitPos = RCC_I2C3, .RCC_Bus = RCC_APB1_R1 };
 
-/* I2C Register Reset Macro Definitions */
-#define I2C1_REG_RESET()								do { RCC->APB1RSTR1 |= (SET_ONE_BITMASK << RCC_I2C1RST); RCC->APB1RSTR1 &= ~(CLEAR_ONE_BITMASK << RCC_I2C1RST); } while (0)
-#define I2C2_REG_RESET()								do { RCC->APB1RSTR1 |= (SET_ONE_BITMASK << RCC_I2C2RST); RCC->APB1RSTR1 &= ~(CLEAR_ONE_BITMASK << RCC_I2C2RST); } while (0)
-#define I2C3_REG_RESET()								do { RCC->APB1RSTR1 |= (SET_ONE_BITMASK << RCC_I2C3RST); RCC->APB1RSTR1 &= ~(CLEAR_ONE_BITMASK << RCC_I2C3RST); } while (0)
 
 /*
  * @I2C_PERIPHERAL_REGISTERS
@@ -70,7 +62,7 @@ typedef struct I2CPeripheralConfiguration
  */
 typedef struct I2CHandleStructure
 {
-	__RW I2Cx_Reg_t *ptr_I2Cx;							/* Holds the base address of the I2C (1/2/3) peripheral */
+	I2Cx_Reg_t 	  *ptr_I2Cx;						/* Holds the base address of the I2C (1/2/3) peripheral */
 	I2C_Config_t 	  I2C_Config;						/*  */
 } I2C_Handle_t;
 
@@ -139,21 +131,21 @@ void I2C_DeInit(__RH I2Cx_Reg_t *const);					/* See RCC Peripheral Reset Registe
 /* I2C Data Read and Write */
 
 // Blocking APIs
-void I2C_DataSend(__RW I2Cx_Reg_t *const, __R uint8_t *volatile, int32_t, uint8_t);
-void I2C_DataReceive(__RW I2Cx_Reg_t *const, __RW uint8_t *volatile, int32_t, uint8_t);
+void I2C_DataSend(I2Cx_Reg_t *const, __R uint8_t *volatile, int32_t, uint8_t);
+void I2C_DataReceive(I2Cx_Reg_t *const, __RW uint8_t *volatile, int32_t, uint8_t);
 
 // Non-Blocking APIs
-bool I2C_DataSend_IT(__RW I2C_Handle_t *const, __R uint8_t *const, int32_t);
-bool I2C_DataReceive_IT(__RW I2C_Handle_t *const, __R uint8_t *const, int32_t);
+bool I2C_DataSend_IT(I2C_Handle_t *const, __R uint8_t *const, int32_t);
+bool I2C_DataReceive_IT(I2C_Handle_t *const, __R uint8_t *const, int32_t);
 
 /* I2C Interrupt Configuration/Handling */
 void I2C_IRQHandlerFunc(__R I2C_Handle_t *const);
 
 /* Other I2C Control Peripherals */
-void I2C_Control(__W I2Cx_Reg_t *const, bool);
+void I2C_Control(I2Cx_Reg_t *const, bool);
 
 /* Application functions */
-void I2C_ApplicationEventCallback(__RW I2C_Handle_t *const, uint8_t);
+void I2C_ApplicationEventCallback(I2C_Handle_t *const, uint8_t);
 
 
 

@@ -6,12 +6,11 @@
  */
 
 
-#include "stm32l433xx.h"
 #include "x_spi.h"
 
 
-static void SPI_TXE_Interrupt_HelperFunc(__RW SPI_Handle_t *const, uint8_t);
-static void SPI_RXNE_Interrupt_HelperFunc(__RW SPI_Handle_t *const, uint8_t);
+static void SPI_TXE_Interrupt_HelperFunc(SPI_Handle_t *const, uint8_t);
+static void SPI_RXNE_Interrupt_HelperFunc(SPI_Handle_t *const, uint8_t);
 static void SPI_OVR_Interrupt_HelperFunc(__R SPI_Handle_t *const);
 static void SPI_ClearOVRFlag(__R SPIx_Reg_t *const);
 
@@ -31,11 +30,11 @@ static void SPI_ClearOVRFlag(__R SPIx_Reg_t *const);
  */
 void SPI_PeriphClkCtrl(__R SPIx_Reg_t *const ptr_SPIx, bool en_di)
 {
-	if (ptr_SPIx == SPI1) (en_di) ? SPI1_CLK_EN() : SPI1_CLK_DI();
+	if (ptr_SPIx == SPI1) (en_di) ? RCC_EnableClock(RCC_MAP_SPI1) : RCC_DisableClock(RCC_MAP_SPI1);
 
-	else if (ptr_SPIx == SPI2) (en_di) ? SPI2_CLK_EN() : SPI2_CLK_DI();
+	else if (ptr_SPIx == SPI2) (en_di) ? RCC_EnableClock(RCC_MAP_SPI2) : RCC_DisableClock(RCC_MAP_SPI2);
 
-	else if (ptr_SPIx == SPI3) (en_di) ? SPI3_CLK_EN() : SPI3_CLK_DI();
+	else if (ptr_SPIx == SPI3) (en_di) ? RCC_EnableClock(RCC_MAP_SPI3) : RCC_DisableClock(RCC_MAP_SPI3);
 
 	else {};
 }
@@ -108,10 +107,10 @@ void SPI_Init(__RH SPI_Handle_t *const ptr_SPIHandle)
 	temp_cr2_register |= (ptr_SPIHandle->SPI_Config.SPI_DataFrameFormat << SPI_DATASIZE);
 
 	/* 5. Configure the SPI clock polarity */
-	temp_cr1_register |= (ptr_SPIHandle->SPI_Config.SPI_ClockPolarity << CPOL);
+	temp_cr1_register |= (ptr_SPIHandle->SPI_Config.SPI_ClockPolarity << SPI_CPOL);
 
 	/* 6. Configure the SPI clock phase */
-	temp_cr1_register |= (ptr_SPIHandle->SPI_Config.SPI_ClockPhase << CPHA);
+	temp_cr1_register |= (ptr_SPIHandle->SPI_Config.SPI_ClockPhase << SPI_CPHA);
 
 	/* 7. SPI CRC configurations */
 	if (ptr_SPIHandle->SPI_Config.SPI_CRCEnable)
@@ -123,16 +122,16 @@ void SPI_Init(__RH SPI_Handle_t *const ptr_SPIHandle)
 	}
 
 	/* 8. Configure SPI software slave select management */
-	if (ptr_SPIHandle->SPI_Config.SPI_SSM) temp_cr1_register |= (SET_ONE_BITMASK << SSM);
+	if (ptr_SPIHandle->SPI_Config.SPI_SSM) temp_cr1_register |= (SET_ONE_BITMASK << SPI_SSM);
 
 	/* 9. Configure SPI internal slave selection */
-	if (ptr_SPIHandle->SPI_Config.SPI_SSI) temp_cr1_register |= (SET_ONE_BITMASK << SSI);
+	if (ptr_SPIHandle->SPI_Config.SPI_SSI) temp_cr1_register |= (SET_ONE_BITMASK << SPI_SSI);
 
 	/* 10. Configure slave select output enable - (!)multi-master */
-	if (ptr_SPIHandle->SPI_Config.SPI_SSOE) temp_cr2_register |= (SET_ONE_BITMASK << SSOE);
+	if (ptr_SPIHandle->SPI_Config.SPI_SSOE) temp_cr2_register |= (SET_ONE_BITMASK << SPI_SSOE);
 
 	/* 11. Configure SPI NSS pulse management */
-	if (ptr_SPIHandle->SPI_Config.SPI_NSSP) temp_cr2_register |= (SET_ONE_BITMASK << NSSP);
+	if (ptr_SPIHandle->SPI_Config.SPI_NSSP) temp_cr2_register |= (SET_ONE_BITMASK << SPI_NSSP);
 
 	/* 12. Write configurations to SPI CR1 and CR2 (overwrite the whole register) */
 	ptr_SPIHandle->ptr_SPIx->CR1 = temp_cr1_register;
@@ -154,11 +153,11 @@ void SPI_Init(__RH SPI_Handle_t *const ptr_SPIHandle)
  */
 void SPI_DeInit(__RH SPIx_Reg_t *const ptr_SPIx)
 {
-	if (ptr_SPIx == SPI1) SPI1_REG_RESET();
+	if (ptr_SPIx == SPI1) RCC_ResetRegister(RCC_MAP_SPI1);
 
-	else if (ptr_SPIx == SPI2) SPI2_REG_RESET();
+	else if (ptr_SPIx == SPI2) RCC_ResetRegister(RCC_MAP_SPI2);
 
-	else if (ptr_SPIx == SPI3) SPI3_REG_RESET();
+	else if (ptr_SPIx == SPI3) RCC_ResetRegister(RCC_MAP_SPI3);
 
 	else {};
 }
@@ -181,7 +180,7 @@ void SPI_DeInit(__RH SPIx_Reg_t *const ptr_SPIx)
  * @Note					- this function operates in a blocking manner
 
  */
-void SPI_DataSend(__RW SPIx_Reg_t *const ptr_SPIx, __R uint8_t *volatile ptr_tx_data, int32_t data_length, uint8_t data_comm_size)
+void SPI_DataSend(SPIx_Reg_t *const ptr_SPIx, __R uint8_t *volatile ptr_tx_data, int32_t data_length, uint8_t data_comm_size)
 {
 	// Decrement cursor variable to track the moving pointer in TX buffer, defaults to a single byte increment
 	uint8_t decrement = 1;
@@ -238,7 +237,7 @@ void SPI_DataSend(__RW SPIx_Reg_t *const ptr_SPIx, __R uint8_t *volatile ptr_tx_
  * @Note					- this function operates in a blocking manner
 
  */
-void SPI_DataReceive(__RW SPIx_Reg_t *const ptr_SPIx, __RW uint8_t *volatile ptr_rx_data, int32_t data_length, uint8_t data_comm_size)
+void SPI_DataReceive(SPIx_Reg_t *const ptr_SPIx, __RW uint8_t *volatile ptr_rx_data, int32_t data_length, uint8_t data_comm_size)
 {
 	// Decrement cursor variable to track the moving pointer in RX buffer, defaults to a single byte increment
 	uint8_t decrement = 1;
@@ -261,7 +260,7 @@ void SPI_DataReceive(__RW SPIx_Reg_t *const ptr_SPIx, __RW uint8_t *volatile ptr
 
 			// 2.1.1 If 16-bit data, cast the RX buffer pointer to point to 16-bit data, then read from SPI DR (RX FIFO)
 			// and write to RX buffer
-			*(__RW uint16_t *volatile)ptr_rx_data = ptr_SPIx->DR;
+			*(__RW uint16_t *volatile)ptr_rx_data = (uint16_t)ptr_SPIx->DR;
 			// 2.2.1 cast to point to 16-bit data for correct pointer arithmetic
 			// 2.3.1 Move RX buffer pointer to next location to be written, depending on data comm length
 			(__RW uint16_t *volatile)ptr_rx_data++;
@@ -269,7 +268,7 @@ void SPI_DataReceive(__RW SPIx_Reg_t *const ptr_SPIx, __RW uint8_t *volatile ptr
 		else if (data_comm_size == 8)
 		{
 			// 2.1.2 8-bit data, direct write to SPI DR (RX FIFO) and direct pointer increment
-			*(ptr_rx_data) = ptr_SPIx->DR;
+			*(ptr_rx_data) = (uint8_t)ptr_SPIx->DR;
 			// 2.2.2
 			// 2.3.2
 			ptr_rx_data++;
@@ -297,7 +296,7 @@ void SPI_DataReceive(__RW SPIx_Reg_t *const ptr_SPIx, __RW uint8_t *volatile ptr
  * @Note					- this function is interrupt-driven - operates in a non-blocking manner
 
  */
-bool SPI_DataSend_IT(__RW SPI_Handle_t *const ptr_SPIHandle, __R uint8_t *const ptr_tx_data, int32_t data_length)
+bool SPI_DataSend_IT(SPI_Handle_t *const ptr_SPIHandle, __R uint8_t *const ptr_tx_data, int32_t data_length)
 {
 	/* Check that the device SPI peripheral is not already in transmission */
 	bool state = ptr_SPIHandle->TX_State;
@@ -337,7 +336,7 @@ bool SPI_DataSend_IT(__RW SPI_Handle_t *const ptr_SPIHandle, __R uint8_t *const 
  * @Note					- this function is interrupt-driven - operates in a non-blocking manner
 
  */
-bool SPI_DataReceive_IT(__RW SPI_Handle_t *const ptr_SPIHandle, __R uint8_t *const ptr_rx_data, int32_t data_length)
+bool SPI_DataReceive_IT(SPI_Handle_t *const ptr_SPIHandle, __R uint8_t *const ptr_rx_data, int32_t data_length)
 {
 	/* Check that the device SPI peripheral is not already in reception */
 	bool state = ptr_SPIHandle->RX_State;
@@ -387,7 +386,7 @@ void SPI_IRQHandlerFunc(__R SPI_Handle_t *const ptr_SPIHandle)
 	/* If transmit event, call TX helper function to initiate transmission */
 	if ( tempvar_1 && tempvar_2 )
 	{
-		SPI_TXE_Interrupt_HelperFunc((__RW SPI_Handle_t *const)ptr_SPIHandle, ptr_SPIHandle->SPI_Config.SPI_DataFrameFormat);
+		SPI_TXE_Interrupt_HelperFunc((SPI_Handle_t *const)ptr_SPIHandle, ptr_SPIHandle->SPI_Config.SPI_DataFrameFormat);
 	}
 
 	/* Check for receive event */
@@ -397,7 +396,7 @@ void SPI_IRQHandlerFunc(__R SPI_Handle_t *const ptr_SPIHandle)
 	/* If receive event, call RX helper function to initiate reception */
 	if ( tempvar_1 && tempvar_2 )
 	{
-		SPI_RXNE_Interrupt_HelperFunc((__RW SPI_Handle_t *const)ptr_SPIHandle, ptr_SPIHandle->SPI_Config.SPI_DataFrameFormat);
+		SPI_RXNE_Interrupt_HelperFunc((SPI_Handle_t *const)ptr_SPIHandle, ptr_SPIHandle->SPI_Config.SPI_DataFrameFormat);
 	}
 
 	/* Check for overrun event */
@@ -427,7 +426,7 @@ void SPI_IRQHandlerFunc(__R SPI_Handle_t *const ptr_SPIHandle)
  * @Note					- called within an ISR, non-blocking
 
  */
-static void SPI_TXE_Interrupt_HelperFunc(__RW SPI_Handle_t *const ptr_SPIHandle, uint8_t data_comm_size)
+static void SPI_TXE_Interrupt_HelperFunc(SPI_Handle_t *const ptr_SPIHandle, uint8_t data_comm_size)
 {
 	// Decrement cursor variable to track the moving pointer in TX buffer, defaults to a single byte increment
 	uint8_t decrement = 1;
@@ -485,7 +484,7 @@ static void SPI_TXE_Interrupt_HelperFunc(__RW SPI_Handle_t *const ptr_SPIHandle,
  * @Note					- called within an ISR, non-blocking
 
  */
-static void SPI_RXNE_Interrupt_HelperFunc(__RW SPI_Handle_t *const ptr_SPIHandle, uint8_t data_comm_size)
+static void SPI_RXNE_Interrupt_HelperFunc(SPI_Handle_t *const ptr_SPIHandle, uint8_t data_comm_size)
 {
 	// Decrement cursor variable to track the moving pointer in RX buffer, defaults to a single byte increment
 	uint8_t decrement = 1;
@@ -502,7 +501,7 @@ static void SPI_RXNE_Interrupt_HelperFunc(__RW SPI_Handle_t *const ptr_SPIHandle
 
 		// 2.1.1 If 16-bit data, cast the RX buffer pointer to point to 16-bit data, then read from SPI DR (RX FIFO)
 		// and write to RX buffer
-		*(uint16_t *)ptr_SPIHandle->ptr_RX_Data = ptr_SPIHandle->ptr_SPIx->DR;
+		*(uint16_t *)ptr_SPIHandle->ptr_RX_Data = (uint16_t)(ptr_SPIHandle->ptr_SPIx->DR);
 		// 2.2.1 cast to point to 16-bit data for correct pointer arithmetic
 		// 2.3.1 Move RX buffer pointer to next location to be written, depending on data comm length
 		(uint16_t *)ptr_SPIHandle->ptr_RX_Data++;
@@ -510,7 +509,7 @@ static void SPI_RXNE_Interrupt_HelperFunc(__RW SPI_Handle_t *const ptr_SPIHandle
 	else if (data_comm_size == 8)
 	{
 		// 2.1.2 8-bit data, direct write to SPI DR (RX FIFO) and direct pointer increment
-		*(ptr_SPIHandle->ptr_RX_Data) = ptr_SPIHandle->ptr_SPIx->DR;
+		*(ptr_SPIHandle->ptr_RX_Data) = (uint8_t)(ptr_SPIHandle->ptr_SPIx->DR);
 		// 2.2.2
 		// 2.3.2
 		ptr_SPIHandle->ptr_RX_Data++;
@@ -553,7 +552,7 @@ static void SPI_OVR_Interrupt_HelperFunc(__R SPI_Handle_t *const ptr_SPIHandle)
 	}
 
 	/* 2. Hand over to application */
-	SPI_ApplicationEventCallback((__RW SPI_Handle_t *const)ptr_SPIHandle, SPI_OVR_ERR);
+	SPI_ApplicationEventCallback((SPI_Handle_t *const)ptr_SPIHandle, SPI_OVR_ERR);
 }
 
 /*
@@ -569,7 +568,7 @@ static void SPI_OVR_Interrupt_HelperFunc(__R SPI_Handle_t *const ptr_SPIHandle)
  * @Note					- none
 
  */
-void SPI_CloseTransmission(__RW SPI_Handle_t *const ptr_SPIHandle)
+void SPI_CloseTransmission(SPI_Handle_t *const ptr_SPIHandle)
 {
 	/* 1. Clear transmission event interrupt flag */
 	ptr_SPIHandle->ptr_SPIx->CR2 &= ~(CLEAR_ONE_BITMASK << SPI_TXEIE);
@@ -593,7 +592,7 @@ void SPI_CloseTransmission(__RW SPI_Handle_t *const ptr_SPIHandle)
  * @Note					- none
 
  */
-void SPI_CloseReception(__RW SPI_Handle_t *const ptr_SPIHandle)
+void SPI_CloseReception(SPI_Handle_t *const ptr_SPIHandle)
 {
 	/* 1. Clear reception event interrupt flag */
 	ptr_SPIHandle->ptr_SPIx->CR2 &= ~(CLEAR_ONE_BITMASK << SPI_RXNEIE);
@@ -645,7 +644,7 @@ static void SPI_ClearOVRFlag(__R SPIx_Reg_t *const ptr_SPIx)
  * @Note					- Weak implementation, user application should overwrite this
 
  */
-__weak void SPI_ApplicationEventCallback(__unused __RW SPI_Handle_t *const ptr_SPIHandle, __unused uint8_t app_event)
+__weak_symbol void SPI_ApplicationEventCallback(__unused SPI_Handle_t *const ptr_SPIHandle, __unused uint8_t app_event)
 {
 	//
 }
@@ -664,7 +663,7 @@ __weak void SPI_ApplicationEventCallback(__unused __RW SPI_Handle_t *const ptr_S
  * @Note					- none
 
  */
-void SPI_Control(__W SPIx_Reg_t *const ptr_SPIx, bool en_di)
+void SPI_Control(SPIx_Reg_t *const ptr_SPIx, bool en_di)
 {
 	(en_di) ? ( ptr_SPIx->CR1 |= (SET_ONE_BITMASK << SPI_ENABLE) ) : ( ptr_SPIx->CR1 &= ~(CLEAR_ONE_BITMASK << SPI_ENABLE) );
 }

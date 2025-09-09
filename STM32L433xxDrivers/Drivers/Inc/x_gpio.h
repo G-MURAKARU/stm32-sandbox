@@ -16,19 +16,9 @@
 typedef struct GPIO_PeripheralRegisters GPIOx_Reg_t;
 
 /* GPIO pointers to base registers */
-#define GPIOA 											( (__RW GPIOx_Reg_t *const)GPIOA_BASE_ADDR )
-#define GPIOB 											( (__RW GPIOx_Reg_t *const)GPIOB_BASE_ADDR )
-#define GPIOC 											( (__RW GPIOx_Reg_t *const)GPIOC_BASE_ADDR )
-
-/* Clock Enable for GPIOx */
-#define GPIOA_CLK_EN() 								( (RCC->AHB2ENR) |= (SET_ONE_BITMASK << RCC_GPIOAEN) )
-#define GPIOB_CLK_EN() 								( (RCC->AHB2ENR) |= (SET_ONE_BITMASK << RCC_GPIOBEN) )
-#define GPIOC_CLK_EN() 								( (RCC->AHB2ENR) |= (SET_ONE_BITMASK << RCC_GPIOCEN) )
-
-/* Clock Disable for GPIOx */
-#define GPIOA_CLK_DI() 								( (RCC->AHB2ENR) &= ~(CLEAR_ONE_BITMASK << RCC_GPIOAEN) )
-#define GPIOB_CLK_DI() 								( (RCC->AHB2ENR) &= ~(CLEAR_ONE_BITMASK << RCC_GPIOBEN) )
-#define GPIOC_CLK_DI() 								( (RCC->AHB2ENR) &= ~(CLEAR_ONE_BITMASK << RCC_GPIOCEN) )
+#define GPIOA 											( (GPIOx_Reg_t *const)GPIOA_BASE_ADDR )
+#define GPIOB 											( (GPIOx_Reg_t *const)GPIOB_BASE_ADDR )
+#define GPIOC 											( (GPIOx_Reg_t *const)GPIOC_BASE_ADDR )
 
 /* GPIO Register Reset Macro Definitions */
 #define GPIOA_REG_RESET()								do { RCC->AHB2RSTR |= (SET_ONE_BITMASK << RCC_GPIOARST); RCC->AHB2RSTR &= ~(CLEAR_ONE_BITMASK << RCC_GPIOARST); } while (0)
@@ -62,9 +52,9 @@ typedef struct GPIOPinConfiguration
 {
 	uint8_t GPIO_PinNumber;								/* !< Possible values from @GPIO_PIN_NUMBERS > */
 	uint8_t GPIO_PinMode;								/* !< Possible values from @GPIO_PIN_MODES > */
-	uint8_t GPIO_PinOSpeed;								/* !< Possible values from @GPIO_PIN_OUTPUT_SPEEDS > */
+	uint8_t GPIO_PinOutSpeed;							/* !< Possible values from @GPIO_PIN_OUTPUT_SPEEDS > */
 	uint8_t GPIO_PinPUPDControl;						/* !< Possible values from @GPIO_PIN_RESISTOR_CONFIGS > */
-	uint8_t GPIO_PinOType;								/* !< Possible values from @GPIO_PIN_OUTPUT_TYPES > */
+	uint8_t GPIO_PinOutType;							/* !< Possible values from @GPIO_PIN_OUTPUT_TYPES > */
 	uint8_t GPIO_PinAltFunc;							/* !< Possible values from @GPIO_PIN_ALTERNATE_FUNCTIONS > */
 } GPIO_PinConfig_t;
 
@@ -74,7 +64,7 @@ typedef struct GPIOPinConfiguration
  */
 typedef struct GPIOHandleStructure
 {
-	__RW GPIOx_Reg_t *ptr_GPIOx;						/* This holds a pointer to the base address of the GPIO port to which the pin belongs */
+	GPIOx_Reg_t 	  *ptr_GPIOx;						/* This holds a pointer to the base address of the GPIO port to which the pin belongs */
 	GPIO_PinConfig_t GPIO_PinConfig;					/* This holds GPIO pin configuration settings */
 } GPIO_Handle_t;
 
@@ -84,8 +74,9 @@ typedef struct GPIOHandleStructure
  */
 typedef enum GPIOPinNumbers
 {
-	PIN_ZERO, PIN_ONE, PIN_TWO, PIN_THREE, PIN_FOUR, PIN_FIVE, PIN_SIX, PIN_SEVEN,
-	PIN_EIGHT, PIN_NINE, PIN_TEN, PIN_ELEVEN, PIN_TWELVE, PIN_THIRTEEN, PIN_FOURTEEN, PIN_FIFTEEN,
+	GPIO_PIN_0, GPIO_PIN_1, GPIO_PIN_2, GPIO_PIN_3, GPIO_PIN_4, GPIO_PIN_5,
+	GPIO_PIN_6, GPIO_PIN_7, GPIO_PIN_8, GPIO_PIN_9, GPIO_PIN_10, GPIO_PIN_11,
+	GPIO_PIN_12, GPIO_PIN_13, GPIO_PIN_14, GPIO_PIN_15,
 } GPIO_Pin_e;
 
 /*
@@ -94,7 +85,8 @@ typedef enum GPIOPinNumbers
  */
 typedef enum GPIOModes
 {
-	INPUT, OUTPUT, ALTERNATE, ANALOG, INTERRUPT_FT, INTERRUPT_RT, INTERRUPT_RFT,
+	GPIO_INPUT, GPIO_OUTPUT, GPIO_ALTERNATE, GPIO_ANALOG,
+	GPIO_INTERRUPT_FT, GPIO_INTERRUPT_RT, GPIO_INTERRUPT_RFT,
 } GPIO_Mode_e;
 
 /*
@@ -103,7 +95,7 @@ typedef enum GPIOModes
  */
 typedef enum GPIOOutputTypes
 {
-	PUSH_PULL, OPEN_DRAIN,
+	GPIO_PUSH_PULL, GPIO_OPEN_DRAIN,
 } GPIO_OType_e;
 
 /*
@@ -112,16 +104,16 @@ typedef enum GPIOOutputTypes
  */
 typedef enum GPIOOutputSpeeds
 {
-	GPIO_LOW, GPIO_MEDIUM, GPIO_HIGH, GPIO_VERY_HIGH,
+	GPIO_LOW_SPEED, GPIO_MEDIUM_SPEED, GPIO_HIGH_SPEED, GPIO_VERY_HIGH_SPEED,
 } GPIO_OSpeed_e;
 
 /*
  * @GPIO_PIN_RESISTOR_CONFIGS
  * GPIO pin possible internal resistor configurations
  */
-typedef enum GPIOPullUpPullDown
+typedef enum GPIOPullUpPullDownResistors
 {
-	GPIO_NONE, GPIO_PULL_UP, GPIO_PULL_DOWN,
+	GPIO_NO_PUPDN, GPIO_PULL_UP, GPIO_PULL_DOWN,
 } GPIO_PUpDn_e;
 
 /*
@@ -130,9 +122,14 @@ typedef enum GPIOPullUpPullDown
  */
 typedef enum GPIOAlternateFunctions
 {
-	ALT_ZERO, ALT_ONE, ALT_TWO, ALT_THREE, ALT_FOUR, ALT_FIVE, ALT_SIX, ALT_SEVEN,
-	ALT_EIGHT, ALT_NINE, ALT_TEN, ALT_ELEVEN, ALT_TWELVE, ALT_THIRTEEN, ALT_FOURTEEN, ALT_FIFTEEN,
+	GPIO_ALT_0, GPIO_ALT_1, GPIO_ALT_2, GPIO_ALT_3, GPIO_ALT_4, GPIO_ALT_5,
+	GPIO_ALT_6, GPIO_ALT_7, GPIO_ALT_8, GPIO_ALT_9, GPIO_ALT_10, GPIO_ALT_11,
+	GPIO_ALT_12, GPIO_ALT_13, GPIO_ALT_14, GPIO_ALT_15,
 } GPIO_Alt_e;
+
+static const RCC_Periph_t RCC_MAP_GPIOA = { .RCC_BitPos = RCC_GPIOA, .RCC_Bus = RCC_AHB2 };
+static const RCC_Periph_t RCC_MAP_GPIOB = { .RCC_BitPos = RCC_GPIOB, .RCC_Bus = RCC_AHB2 };
+static const RCC_Periph_t RCC_MAP_GPIOC = { .RCC_BitPos = RCC_GPIOC, .RCC_Bus = RCC_AHB2 };
 
 /******************************************************************************************
  *								APIs supported by this driver
@@ -146,12 +143,128 @@ void GPIO_PeriphClkCtrl(__R GPIOx_Reg_t *const, bool);
 void GPIO_Init(__R GPIO_Handle_t *const);
 void GPIO_DeInit(__RH GPIOx_Reg_t *const);					/* See RCC Peripheral Reset Register - Resets all registers */
 
-/* GPIO Data Read and Write */
-uint8_t GPIO_ReadPin(__R GPIOx_Reg_t *const, uint8_t);
-uint16_t GPIO_ReadPort(__R GPIOx_Reg_t *const);
-void GPIO_WritePin(__W GPIOx_Reg_t *const, uint8_t, uint8_t);
-void GPIO_WritePort(__W GPIOx_Reg_t *const, uint16_t);
-void GPIO_TogglePin(__RW GPIOx_Reg_t *const, uint8_t);
+/* GPIO Data Read and Write, static inline functions */
+
+/*
+
+ * @fn						- GPIO_ReadPin
+ *
+ * @brief					- this function reads and returns the contents of a GPIO pin's input data register
+ *
+ * @param ptr_GPIOx			- pointer to the base address of the GPIO peripheral
+ * @param pin_number		- GPIO pin number
+ *
+ * @return					- input GPIO pin's state/contents
+ *
+ * @Note					- none
+
+ */
+static inline uint8_t GPIO_ReadPin(__R GPIOx_Reg_t *const ptr_GPIOx, uint8_t pin_number)
+{
+ 	return ( (ptr_GPIOx->IDR >> pin_number) & CHECK_ONE_BITMASK ) ? 1 : 0;
+}
+
+/*
+
+ * @fn						- GPIO_ReadPort
+ *
+ * @brief					- this function reads and returns the contents of a GPIO port's input data register
+ *
+ * @param ptr_GPIOx			- pointer to the base address of the GPIO peripheral
+ *
+ * @return					- GPIO port's IDR contents
+ *
+ * @Note					- none
+
+ */
+static inline uint16_t GPIO_ReadPort(__R GPIOx_Reg_t *const ptr_GPIOx)
+{
+	return ( (uint16_t)ptr_GPIOx->IDR );
+}
+
+/*
+
+ * @fn						- GPIO_WritePort
+ *
+ * @brief					- this function writes a value @value to the given GPIO port
+ *
+ * @param ptr_GPIOx			- pointer to the base address of the GPIO peripheral
+ * @param value				- value to write to the GPIO port's IDR
+ *
+ * @return					- none
+ *
+ * @Note					- none
+
+ */
+static inline void GPIO_WritePort(GPIOx_Reg_t *const ptr_GPIOx, uint16_t value)
+{
+	ptr_GPIOx->ODR = value;
+}
+
+/*
+
+ * @fn						- GPIO_SetPin
+ *
+ * @brief					- this function sets the output value of given GPIO pins
+ *
+ * @param ptr_GPIOx			- pointer to the base address of the GPIO peripheral
+ * @param pin_mask			- mask containing the pin(s) to set
+ *
+ * @return					- none
+ *
+ * @Note					- this is inline function definition
+
+ */
+static inline void GPIO_SetPin(GPIOx_Reg_t *const ptr_GPIOx, uint32_t pin_mask)
+{
+	ptr_GPIOx->BSRR = pin_mask;
+}
+
+/*
+
+ * @fn						- GPIO_ResetPin
+ *
+ * @brief					- this function resets the output value of given GPIO pins
+ *
+ * @param ptr_GPIOx			- pointer to the base address of the GPIO peripheral
+ * @param pin_mask			- mask containing the pin(s) to reset
+ *
+ * @return					- none
+ *
+ * @Note					- this is inline function definition
+
+ */
+static inline void GPIO_ResetPin(GPIOx_Reg_t *const ptr_GPIOx, uint32_t pin_mask)
+{
+	ptr_GPIOx->BSRR = (pin_mask << 16);
+}
+
+/*
+
+ * @fn						- GPIO_TogglePin
+ *
+ * @brief					- this function toggles the desired pin(s)'s output value
+ *
+ * @param ptr_GPIOx			- pointer to the base address of the GPIO peripheral
+ * @param pin_number		- mask containing the pin(s) to toggle
+ *
+ * @return					- none
+ *
+ * @Note					- none
+
+ */
+static inline void GPIO_TogglePin(GPIOx_Reg_t *const ptr_GPIOx, uint32_t pin_mask)
+{
+	const uint32_t odr_contents = ptr_GPIOx->ODR;
+
+	// First part will toggle from HIGH to LOW, second part will toggle from LOW to HIGH
+	// Remember, writing '0' to any part of BSRR does nothing,
+	// So one of below operations will do nothing, hence no conflict
+
+	// Below OR operation essentially 'concatenates' two 16-bit masks into one 32-bit mask, no overwrites
+	// This allows for multiple pin manipulations at once
+	ptr_GPIOx->BSRR = ( ((odr_contents & pin_mask) << 16) | (~odr_contents & pin_mask) );
+}
 
 /* GPIO Interrupt Configuration/Handling */
 void GPIO_IRQHandlerFunc(uint8_t);

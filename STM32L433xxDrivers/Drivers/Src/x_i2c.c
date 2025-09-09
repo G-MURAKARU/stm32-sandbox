@@ -25,11 +25,11 @@
  */
 void I2C_PeriphClkCtrl(__R I2Cx_Reg_t *const ptr_I2Cx, bool en_di)
 {
-	if (ptr_I2Cx == I2C1) (en_di) ? I2C1_CLK_EN() : I2C1_CLK_DI();
+	if (ptr_I2Cx == I2C1) (en_di) ? RCC_EnableClock(RCC_MAP_I2C1) : RCC_DisableClock(RCC_MAP_I2C1);
 
-	else if (ptr_I2Cx == I2C2) (en_di) ? I2C2_CLK_EN() : I2C2_CLK_DI();
+	else if (ptr_I2Cx == I2C2) (en_di) ? RCC_EnableClock(RCC_MAP_I2C2) : RCC_DisableClock(RCC_MAP_I2C2);
 
-	else if (ptr_I2Cx == I2C3) (en_di) ? I2C3_CLK_EN() : I2C3_CLK_DI();
+	else if (ptr_I2Cx == I2C3) (en_di) ? RCC_EnableClock(RCC_MAP_I2C3) : RCC_DisableClock(RCC_MAP_I2C3);
 
 	else {};
 }
@@ -64,11 +64,11 @@ void I2C_Init(__RH I2C_Handle_t *const ptr_I2CHandle);
  */
 void I2C_DeInit(__RH I2Cx_Reg_t *const ptr_I2Cx)
 {
-	if (ptr_I2Cx == I2C1) I2C1_REG_RESET();
+	if (ptr_I2Cx == I2C1) RCC_ResetRegister(RCC_MAP_I2C1);
 
-	else if (ptr_I2Cx == I2C2) I2C2_REG_RESET();
+	else if (ptr_I2Cx == I2C2) RCC_ResetRegister(RCC_MAP_I2C2);
 
-	else if (ptr_I2Cx == I2C3) I2C3_REG_RESET();
+	else if (ptr_I2Cx == I2C3) RCC_ResetRegister(RCC_MAP_I2C3);
 
 	else {};
 }
@@ -87,7 +87,7 @@ void I2C_DeInit(__RH I2Cx_Reg_t *const ptr_I2Cx)
  * @Note					- none
 
  */
-void I2C_Control(__W I2Cx_Reg_t *const ptr_I2Cx, bool en_di)
+void I2C_Control(I2Cx_Reg_t *const ptr_I2Cx, bool en_di)
 {
 	(en_di) ? ( ptr_I2Cx->CR1 |= (SET_ONE_BITMASK << I2C_ENABLE) ) : ( ptr_I2Cx->CR1 &= ~(CLEAR_ONE_BITMASK << I2C_ENABLE) );
 }
