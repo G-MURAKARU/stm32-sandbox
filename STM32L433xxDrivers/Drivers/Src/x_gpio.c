@@ -7,6 +7,7 @@
 
 
 #include "x_gpio.h"
+#include "x_nvic.h"
 
 
 static int8_t SYSCFG_EXTICR_HelperFunc(__R GPIOx_Reg_t *);
@@ -27,11 +28,11 @@ static int8_t SYSCFG_EXTICR_HelperFunc(__R GPIOx_Reg_t *);
  */
 void GPIO_PeriphClkCtrl(__R GPIOx_Reg_t *const ptr_GPIOx, bool en_di)
 {
-	if (ptr_GPIOx == GPIOA) (en_di) ? RCC_EnableClock(RCC_MAP_GPIOA) : RCC_DisableClock(RCC_MAP_GPIOA);
+	if (ptr_GPIOx == GPIOA) (en_di) ? PER_EnableClock(RCC_MAP_GPIOA) : PER_DisableClock(RCC_MAP_GPIOA);
 
-	else if (ptr_GPIOx == GPIOB) (en_di) ? RCC_EnableClock(RCC_MAP_GPIOB) : RCC_DisableClock(RCC_MAP_GPIOB);
+	else if (ptr_GPIOx == GPIOB) (en_di) ? PER_EnableClock(RCC_MAP_GPIOB) : PER_DisableClock(RCC_MAP_GPIOB);
 
-	else if (ptr_GPIOx == GPIOC) (en_di) ? RCC_EnableClock(RCC_MAP_GPIOC) : RCC_DisableClock(RCC_MAP_GPIOC);
+	else if (ptr_GPIOx == GPIOC) (en_di) ? PER_EnableClock(RCC_MAP_GPIOC) : PER_DisableClock(RCC_MAP_GPIOC);
 
 	else {};
 }
@@ -83,7 +84,7 @@ void GPIO_Init(__R GPIO_Handle_t *const ptr_GPIOHandle)
 			 * Bit-shift the desired pin mode by (2 * pin number) positions
 			 * Write this to the GPIO's mode register
 			 */
-			ptr_GPIOHandle->ptr_GPIOx->MODER &= ~( CLEAR_TWO_BITMASK << (2 * (ptr_GPIOHandle->GPIO_PinConfig.GPIO_PinNumber)) );
+			ptr_GPIOHandle->ptr_GPIOx->MODER &= ~( CLEAR_TWO_BITMASK << ( 2 * (ptr_GPIOHandle->GPIO_PinConfig.GPIO_PinNumber) ) );
 			ptr_GPIOHandle->ptr_GPIOx->MODER |= ( ptr_GPIOHandle->GPIO_PinConfig.GPIO_PinMode << ( 2 * (ptr_GPIOHandle->GPIO_PinConfig.GPIO_PinNumber) ) );
 			break;
 
@@ -98,7 +99,7 @@ void GPIO_Init(__R GPIO_Handle_t *const ptr_GPIOHandle)
 			 * This is found in SYSCFG peripheral
 			 * R/W access to SYSCFG peripheral is needed, so its clock needs enabling
 			 */
-			RCC_EnableClock(RCC_MAP_SYSCFG);
+			PER_EnableClock(RCC_MAP_SYSCFG);
 
 			/* Set the source input for an EXTI interrupt event, as per hardware (see EXTI MUX)
 			 * See data sheet, there exists 4 EXTI control registers (EXTICR), each handling 4 GPIO pins
@@ -214,13 +215,37 @@ void GPIO_Init(__R GPIO_Handle_t *const ptr_GPIOHandle)
  */
 void GPIO_DeInit(__RH GPIOx_Reg_t *const ptr_GPIOx)
 {
-	if (ptr_GPIOx == GPIOA) RCC_ResetRegister(RCC_MAP_GPIOA);
+	if (ptr_GPIOx == GPIOA) PER_ResetPeripheral(RCC_MAP_GPIOA);
 
-	else if (ptr_GPIOx == GPIOB) RCC_ResetRegister(RCC_MAP_GPIOB);
+	else if (ptr_GPIOx == GPIOB) PER_ResetPeripheral(RCC_MAP_GPIOB);
 
-	else if (ptr_GPIOx == GPIOC) RCC_ResetRegister(RCC_MAP_GPIOC);
+	else if (ptr_GPIOx == GPIOC) PER_ResetPeripheral(RCC_MAP_GPIOC);
 
 	else {};
+}
+
+
+int8_t GPIO_GetIRQn(uint8_t pin)
+{
+    switch (pin)
+    {
+    	case 0:
+    		return IRQ_EXTI0;
+    	case 1:
+    		return IRQ_EXTI1;
+    	case 2:
+    		return IRQ_EXTI2;
+    	case 3:
+    		return IRQ_EXTI3;
+    	case 4:
+    		return IRQ_EXTI4;
+    	case 5: case 6: case 7: case 8: case 9:
+    		return IRQ_EXTI9_5;
+    	case 10: case 11: case 12: case 13: case 14: case 15:
+    		return IRQ_EXTI15_10;
+    	default:
+    		return -1;
+    }
 }
 
 /*

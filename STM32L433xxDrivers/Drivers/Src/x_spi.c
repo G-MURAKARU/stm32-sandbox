@@ -30,11 +30,11 @@ static void SPI_ClearOVRFlag(__R SPIx_Reg_t *const);
  */
 void SPI_PeriphClkCtrl(__R SPIx_Reg_t *const ptr_SPIx, bool en_di)
 {
-	if (ptr_SPIx == SPI1) (en_di) ? RCC_EnableClock(RCC_MAP_SPI1) : RCC_DisableClock(RCC_MAP_SPI1);
+	if (ptr_SPIx == SPI1) (en_di) ? PER_EnableClock(RCC_MAP_SPI1) : PER_DisableClock(RCC_MAP_SPI1);
 
-	else if (ptr_SPIx == SPI2) (en_di) ? RCC_EnableClock(RCC_MAP_SPI2) : RCC_DisableClock(RCC_MAP_SPI2);
+	else if (ptr_SPIx == SPI2) (en_di) ? PER_EnableClock(RCC_MAP_SPI2) : PER_DisableClock(RCC_MAP_SPI2);
 
-	else if (ptr_SPIx == SPI3) (en_di) ? RCC_EnableClock(RCC_MAP_SPI3) : RCC_DisableClock(RCC_MAP_SPI3);
+	else if (ptr_SPIx == SPI3) (en_di) ? PER_EnableClock(RCC_MAP_SPI3) : PER_DisableClock(RCC_MAP_SPI3);
 
 	else {};
 }
@@ -153,11 +153,11 @@ void SPI_Init(__RH SPI_Handle_t *const ptr_SPIHandle)
  */
 void SPI_DeInit(__RH SPIx_Reg_t *const ptr_SPIx)
 {
-	if (ptr_SPIx == SPI1) RCC_ResetRegister(RCC_MAP_SPI1);
+	if (ptr_SPIx == SPI1) PER_ResetPeripheral(RCC_MAP_SPI1);
 
-	else if (ptr_SPIx == SPI2) RCC_ResetRegister(RCC_MAP_SPI2);
+	else if (ptr_SPIx == SPI2) PER_ResetPeripheral(RCC_MAP_SPI2);
 
-	else if (ptr_SPIx == SPI3) RCC_ResetRegister(RCC_MAP_SPI3);
+	else if (ptr_SPIx == SPI3) PER_ResetPeripheral(RCC_MAP_SPI3);
 
 	else {};
 }

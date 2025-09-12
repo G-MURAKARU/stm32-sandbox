@@ -25,11 +25,11 @@
  */
 void I2C_PeriphClkCtrl(__R I2Cx_Reg_t *const ptr_I2Cx, bool en_di)
 {
-	if (ptr_I2Cx == I2C1) (en_di) ? RCC_EnableClock(RCC_MAP_I2C1) : RCC_DisableClock(RCC_MAP_I2C1);
+	if (ptr_I2Cx == I2C1) (en_di) ? PER_EnableClock(RCC_MAP_I2C1) : PER_DisableClock(RCC_MAP_I2C1);
 
-	else if (ptr_I2Cx == I2C2) (en_di) ? RCC_EnableClock(RCC_MAP_I2C2) : RCC_DisableClock(RCC_MAP_I2C2);
+	else if (ptr_I2Cx == I2C2) (en_di) ? PER_EnableClock(RCC_MAP_I2C2) : PER_DisableClock(RCC_MAP_I2C2);
 
-	else if (ptr_I2Cx == I2C3) (en_di) ? RCC_EnableClock(RCC_MAP_I2C3) : RCC_DisableClock(RCC_MAP_I2C3);
+	else if (ptr_I2Cx == I2C3) (en_di) ? PER_EnableClock(RCC_MAP_I2C3) : PER_DisableClock(RCC_MAP_I2C3);
 
 	else {};
 }
@@ -64,11 +64,11 @@ void I2C_Init(__RH I2C_Handle_t *const ptr_I2CHandle);
  */
 void I2C_DeInit(__RH I2Cx_Reg_t *const ptr_I2Cx)
 {
-	if (ptr_I2Cx == I2C1) RCC_ResetRegister(RCC_MAP_I2C1);
+	if (ptr_I2Cx == I2C1) PER_ResetPeripheral(RCC_MAP_I2C1);
 
-	else if (ptr_I2Cx == I2C2) RCC_ResetRegister(RCC_MAP_I2C2);
+	else if (ptr_I2Cx == I2C2) PER_ResetPeripheral(RCC_MAP_I2C2);
 
-	else if (ptr_I2Cx == I2C3) RCC_ResetRegister(RCC_MAP_I2C3);
+	else if (ptr_I2Cx == I2C3) PER_ResetPeripheral(RCC_MAP_I2C3);
 
 	else {};
 }

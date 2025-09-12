@@ -17,35 +17,18 @@
 
 /**********************************START:Processor Specific Details **********************************/
 
-/*
- * ARM Cortex-Mx Processor Nested Vector Interrupt Controller (NVIC) Register Addresses, from user guide
- */
-
-/* NVIC Interrupt Set-Enable Register memory locations */
-// 7 available but using 4 because 64 < IRQ positions < 96
-#define NVIC_ISERx_BASE_ADDR				0xE000E100UL
-#define NVIC_ISER0							( (__RW uint32_t *)(NVIC_ISERx_BASE_ADDR + 0x0UL) )
-#define NVIC_ISER1							( (__RW uint32_t *)(NVIC_ISERx_BASE_ADDR + 0x4UL) )
-#define NVIC_ISER2							( (__RW uint32_t *)(NVIC_ISERx_BASE_ADDR + 0x8UL) )
-#define NVIC_ISER3							( (__RW uint32_t *)(NVIC_ISERx_BASE_ADDR + 0xCUL) )
-
-/* NVIC Interrupt Clear-Enable Register memory locations */
-#define NVIC_ICERx_BASE_ADDR				0xE000E180UL
-#define NVIC_ICER0							( (__RW uint32_t *)(NVIC_ICERx_BASE_ADDR + 0x0UL) )
-#define NVIC_ICER1							( (__RW uint32_t *)(NVIC_ICERx_BASE_ADDR + 0x4UL) )
-#define NVIC_ICER2							( (__RW uint32_t *)(NVIC_ICERx_BASE_ADDR + 0x8UL) )
-#define NVIC_ICER3							( (__RW uint32_t *)(NVIC_ICERx_BASE_ADDR + 0xCUL) )
-
-/* NVIC Interrupt Priority Register memory locations */
-#define NVIC_IPRx_BASE_ADDR				0xE000E400UL
-#define NUM_PR_BITS_IMPLEMENTED			(uint8_t) 4				/* Number of implemented/usable IPR IRQ priority bits */
-
-
 /* Macros to be used with registers denoting contextual read/write access */
 #define __RW								volatile				/* software readable and writable */
 #define __R								const					/* software read only, will not change */
 #define __RH								volatile const			/* software read only, may be written by hardware */
 #define __W								__RW					/* software write only */
+
+/* Structure forward declarations, see docs below */
+
+typedef struct RCC_PeripheralRegisters 		RCC_Reg_t;
+typedef struct RCC_PeripheralMapper 			RCC_Periph_t;
+typedef struct SYSCFG_PeripheralRegisters 	SYSCFG_Reg_t;
+typedef struct EXTI_PeripheralRegisters 		EXTI_Reg_t;
 
 
 /* Base Addresses of the MCU Internal Memories */
@@ -238,18 +221,18 @@
 #define SINGLE_BITMASK					CLEAR_ONE_BITMASK
 
 /* Pointers to globally-used (peripheral) registers */
+
+/* Reset and Clock Control */
 #define RCC								( (__RW RCC_Reg_t *const)RCC_BASE_ADDR )
 
+/* External Interrupts and Events */
 #define EXTI								( (__RW EXTI_Reg_t *const)EXTI_BASE_ADDR )
 
+/* System Configurations */
 #define SYSCFG								( (__RW SYSCFG_Reg_t *const)SYSCFG_BASE_ADDR )
-
-#define NVIC_IPRx							( (__RW uint32_t *const)NVIC_IPRx_BASE_ADDR )
 
 
 /********************************** PERIPHERAL REGISTER STRUCTURE DEFINITIONS **********************************/
-
-/* GPIOx_Reg_t was here */
 
 /*
  * @RCC_PERIPHERAL_REGISTERS
@@ -395,15 +378,9 @@ typedef enum RCC_APB2_Peripherals
 	RCC_TIM15 = 16, RCC_TIM16, RCC_SAI = 21, RCC_DFSDM1 = 24,
 } RCC_APB2_e;
 
-/*
- * @NVIC_IRQ_NUMBERS
- * NVIC possible interrupt request numbers, based on MCU NVIC vector table
- */
-typedef enum NVIC_IRQ_Numbers
-{
-	IRQ_EXTI0 = 6, IRQ_EXTI1, IRQ_EXTI2, IRQ_EXTI3, IRQ_EXTI4, IRQ_EXTI9_5 = 23,
-	IRQ_SPI1 = 35, IRQ_SPI2 = 36, IRQ_EXTI15_10 = 40, IRQ_SPI3 = 51,
-} NVIC_IRQNum_e;
+
+static const RCC_Periph_t RCC_MAP_SYSCFG = { .RCC_BitPos = RCC_SYSCFG, .RCC_Bus = RCC_APB2 };			/* RCC Peripheral Mapper for all peripheral's settings handled by RCC (clock, reset, etc) */
+
 
 /*
 
@@ -418,7 +395,7 @@ typedef enum NVIC_IRQ_Numbers
  * @Note					- inline function definition
 
  */
-static inline void RCC_EnableClock(RCC_Periph_t periph)
+static inline void PER_EnableClock(RCC_Periph_t periph)
 {
 	switch (periph.RCC_Bus)
 	{
@@ -460,7 +437,7 @@ static inline void RCC_EnableClock(RCC_Periph_t periph)
  * @Note					- inline function definition
 
  */
-static inline void RCC_DisableClock(RCC_Periph_t periph)
+static inline void PER_DisableClock(RCC_Periph_t periph)
 {
 	switch (periph.RCC_Bus)
 	{
@@ -489,11 +466,18 @@ static inline void RCC_DisableClock(RCC_Periph_t periph)
 	}
 }
 
+static __always_inline void PER_ResetPeripheral_HelperFunc(__RW uint32_t *const ptr_RCCReg, uint8_t bitpos)
+{
+	*ptr_RCCReg |= (SET_ONE_BITMASK << bitpos);
+	*ptr_RCCReg &= ~(CLEAR_ONE_BITMASK << bitpos);
+	(void)(*ptr_RCCReg);
+}
+
 /*
 
- * @fn						- RCC_ClockDisable
+ * @fn						- RCC_ResetPeripheral
  *
- * @brief					- this function disables the peripheral clock for the given peripheral, through RCC
+ * @brief					- this function resets all the registers for the given peripheral, through RCC
  *
  * @param periph			- struct containing the peripheral's mapping to RCC clock registers
  *
@@ -502,40 +486,35 @@ static inline void RCC_DisableClock(RCC_Periph_t periph)
  * @Note					- inline function definition
 
  */
-static inline void RCC_ResetRegister(RCC_Periph_t periph)
+static inline void PER_ResetPeripheral(RCC_Periph_t periph)
 {
 	switch (periph.RCC_Bus)
 	{
 		case RCC_AHB2:
+			/*
 			RCC->AHB2RSTR |= (SET_ONE_BITMASK << periph.RCC_BitPos);
 			RCC->AHB2RSTR &= ~(CLEAR_ONE_BITMASK << periph.RCC_BitPos);
 			(void)RCC->AHB2RSTR;
+			*/
+			PER_ResetPeripheral_HelperFunc(&(RCC->AHB2RSTR), periph.RCC_BitPos);
 			break;
 
 		case RCC_APB1_R1:
-			RCC->APB1RSTR1 |= (SET_ONE_BITMASK << periph.RCC_BitPos);
-			RCC->APB1RSTR1 &= ~(CLEAR_ONE_BITMASK << periph.RCC_BitPos);
-			(void)RCC->APB1RSTR1;
+			PER_ResetPeripheral_HelperFunc(&(RCC->APB1RSTR1), periph.RCC_BitPos);
 			break;
 
 		case RCC_APB1_R2:
-			RCC->APB1RSTR2 |= (SET_ONE_BITMASK << periph.RCC_BitPos);
-			RCC->APB1RSTR2 &= ~(CLEAR_ONE_BITMASK << periph.RCC_BitPos);
-			(void)RCC->APB1RSTR2;
+			PER_ResetPeripheral_HelperFunc(&(RCC->APB1RSTR2), periph.RCC_BitPos);
 			break;
 
 		case RCC_APB2:
-			RCC->APB2RSTR |= (SET_ONE_BITMASK << periph.RCC_BitPos);
-			RCC->APB2RSTR &= ~(CLEAR_ONE_BITMASK << periph.RCC_BitPos);
-			(void)RCC->APB2RSTR;
+			PER_ResetPeripheral_HelperFunc(&(RCC->APB2RSTR), periph.RCC_BitPos);
 			break;
 
 		default:
 			break;
 	}
 }
-
-static const RCC_Periph_t RCC_MAP_SYSCFG = { .RCC_BitPos = RCC_SYSCFG, .RCC_Bus = RCC_APB2 };
 
 
 /* Clock Enable for U(S)ARTx */
@@ -553,8 +532,6 @@ static const RCC_Periph_t RCC_MAP_SYSCFG = { .RCC_BitPos = RCC_SYSCFG, .RCC_Bus 
 /* Function Declarations */
 
 int8_t MCU_GetFlagStatus(uint32_t, uint8_t, uint8_t);
-void NVIC_IRQPositionConfig(uint8_t, bool);
-void NVIC_IRQPriorityConfig(uint8_t, uint16_t);
 
 
 #endif /* INC_STM32L433XX_H_ */

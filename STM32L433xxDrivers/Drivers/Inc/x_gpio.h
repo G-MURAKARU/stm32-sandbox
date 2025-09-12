@@ -9,21 +9,17 @@
 #define INC_X_GPIO_H_
 
 
-#include "stm32l433xx.h"
+#include "x_gpio_defs.h"
 
 
-/* Structure forward declarations */
-typedef struct GPIO_PeripheralRegisters GPIOx_Reg_t;
+/* RCC - GPIOA mapping structure, for clock control */
+static const RCC_Periph_t RCC_MAP_GPIOA = { .RCC_BitPos = RCC_GPIOA, .RCC_Bus = RCC_AHB2 };
 
-/* GPIO pointers to base registers */
-#define GPIOA 											( (GPIOx_Reg_t *const)GPIOA_BASE_ADDR )
-#define GPIOB 											( (GPIOx_Reg_t *const)GPIOB_BASE_ADDR )
-#define GPIOC 											( (GPIOx_Reg_t *const)GPIOC_BASE_ADDR )
+/* RCC - GPIOB mapping structure, for clock control */
+static const RCC_Periph_t RCC_MAP_GPIOB = { .RCC_BitPos = RCC_GPIOB, .RCC_Bus = RCC_AHB2 };
 
-/* GPIO Register Reset Macro Definitions */
-#define GPIOA_REG_RESET()								do { RCC->AHB2RSTR |= (SET_ONE_BITMASK << RCC_GPIOARST); RCC->AHB2RSTR &= ~(CLEAR_ONE_BITMASK << RCC_GPIOARST); } while (0)
-#define GPIOB_REG_RESET()								do { RCC->AHB2RSTR |= (SET_ONE_BITMASK << RCC_GPIOBRST); RCC->AHB2RSTR &= ~(CLEAR_ONE_BITMASK << RCC_GPIOBRST); } while (0)
-#define GPIOC_REG_RESET()								do { RCC->AHB2RSTR |= (SET_ONE_BITMASK << RCC_GPIOCRST); RCC->AHB2RSTR &= ~(CLEAR_ONE_BITMASK << RCC_GPIOCRST); } while (0)
+/* RCC - GPIOC mapping structure, for clock control */
+static const RCC_Periph_t RCC_MAP_GPIOC = { .RCC_BitPos = RCC_GPIOC, .RCC_Bus = RCC_AHB2 };
 
 /*
  * @GPIO_PERIPHERAL_REGISTERS
@@ -56,6 +52,7 @@ typedef struct GPIOPinConfiguration
 	uint8_t GPIO_PinPUPDControl;						/* !< Possible values from @GPIO_PIN_RESISTOR_CONFIGS > */
 	uint8_t GPIO_PinOutType;							/* !< Possible values from @GPIO_PIN_OUTPUT_TYPES > */
 	uint8_t GPIO_PinAltFunc;							/* !< Possible values from @GPIO_PIN_ALTERNATE_FUNCTIONS > */
+	uint8_t GPIO_PinIRQPriority;						/* !< Possible values from @NVIC_IRQ_PRIORITY_NUMBERS > */
 } GPIO_PinConfig_t;
 
 /*
@@ -127,9 +124,6 @@ typedef enum GPIOAlternateFunctions
 	GPIO_ALT_12, GPIO_ALT_13, GPIO_ALT_14, GPIO_ALT_15,
 } GPIO_Alt_e;
 
-static const RCC_Periph_t RCC_MAP_GPIOA = { .RCC_BitPos = RCC_GPIOA, .RCC_Bus = RCC_AHB2 };
-static const RCC_Periph_t RCC_MAP_GPIOB = { .RCC_BitPos = RCC_GPIOB, .RCC_Bus = RCC_AHB2 };
-static const RCC_Periph_t RCC_MAP_GPIOC = { .RCC_BitPos = RCC_GPIOC, .RCC_Bus = RCC_AHB2 };
 
 /******************************************************************************************
  *								APIs supported by this driver
@@ -159,7 +153,7 @@ void GPIO_DeInit(__RH GPIOx_Reg_t *const);					/* See RCC Peripheral Reset Regis
  * @Note					- none
 
  */
-static inline uint8_t GPIO_ReadPin(__R GPIOx_Reg_t *const ptr_GPIOx, uint8_t pin_number)
+static __always_inline uint8_t GPIO_ReadPin(__R GPIOx_Reg_t *const ptr_GPIOx, uint8_t pin_number)
 {
  	return ( (ptr_GPIOx->IDR >> pin_number) & CHECK_ONE_BITMASK ) ? 1 : 0;
 }
@@ -177,7 +171,7 @@ static inline uint8_t GPIO_ReadPin(__R GPIOx_Reg_t *const ptr_GPIOx, uint8_t pin
  * @Note					- none
 
  */
-static inline uint16_t GPIO_ReadPort(__R GPIOx_Reg_t *const ptr_GPIOx)
+static __always_inline uint16_t GPIO_ReadPort(__R GPIOx_Reg_t *const ptr_GPIOx)
 {
 	return ( (uint16_t)ptr_GPIOx->IDR );
 }
@@ -196,7 +190,7 @@ static inline uint16_t GPIO_ReadPort(__R GPIOx_Reg_t *const ptr_GPIOx)
  * @Note					- none
 
  */
-static inline void GPIO_WritePort(GPIOx_Reg_t *const ptr_GPIOx, uint16_t value)
+static __always_inline void GPIO_WritePort(GPIOx_Reg_t *const ptr_GPIOx, uint16_t value)
 {
 	ptr_GPIOx->ODR = value;
 }
@@ -215,7 +209,7 @@ static inline void GPIO_WritePort(GPIOx_Reg_t *const ptr_GPIOx, uint16_t value)
  * @Note					- this is inline function definition
 
  */
-static inline void GPIO_SetPin(GPIOx_Reg_t *const ptr_GPIOx, uint32_t pin_mask)
+static __always_inline void GPIO_SetPin(GPIOx_Reg_t *const ptr_GPIOx, uint32_t pin_mask)
 {
 	ptr_GPIOx->BSRR = pin_mask;
 }
@@ -234,7 +228,7 @@ static inline void GPIO_SetPin(GPIOx_Reg_t *const ptr_GPIOx, uint32_t pin_mask)
  * @Note					- this is inline function definition
 
  */
-static inline void GPIO_ResetPin(GPIOx_Reg_t *const ptr_GPIOx, uint32_t pin_mask)
+static __always_inline void GPIO_ResetPin(GPIOx_Reg_t *const ptr_GPIOx, uint32_t pin_mask)
 {
 	ptr_GPIOx->BSRR = (pin_mask << 16);
 }
@@ -246,7 +240,7 @@ static inline void GPIO_ResetPin(GPIOx_Reg_t *const ptr_GPIOx, uint32_t pin_mask
  * @brief					- this function toggles the desired pin(s)'s output value
  *
  * @param ptr_GPIOx			- pointer to the base address of the GPIO peripheral
- * @param pin_number		- mask containing the pin(s) to toggle
+ * @param pin_mask			- mask containing the pin(s) to toggle
  *
  * @return					- none
  *

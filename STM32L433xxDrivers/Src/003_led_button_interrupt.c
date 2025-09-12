@@ -5,8 +5,8 @@
  *      Author: MURAKARU
  */
 
-#include "stm32l433xx.h"
 #include "x_gpio.h"
+#include "x_nvic.h"
 #include <stdlib.h>
 #include <string.h>
 
@@ -25,17 +25,17 @@ int main(void)
 	// 2. Output configurations : On-board LED
 	gpio_LED.ptr_GPIOx = GPIOC;
 
-	gpio_LED.GPIO_PinConfig.GPIO_PinNumber = PIN_THIRTEEN;
-	gpio_LED.GPIO_PinConfig.GPIO_PinMode = OUTPUT;
-	gpio_LED.GPIO_PinConfig.GPIO_PinOSpeed = GPIO_HIGH;
-	gpio_LED.GPIO_PinConfig.GPIO_PinOType = PUSH_PULL;
-	gpio_LED.GPIO_PinConfig.GPIO_PinPUPDControl = GPIO_NONE;
+	gpio_LED.GPIO_PinConfig.GPIO_PinNumber = GPIO_PIN_13;
+	gpio_LED.GPIO_PinConfig.GPIO_PinMode = GPIO_OUTPUT;
+	gpio_LED.GPIO_PinConfig.GPIO_PinOutSpeed = GPIO_HIGH_SPEED;
+	gpio_LED.GPIO_PinConfig.GPIO_PinOutType = GPIO_PUSH_PULL;
+	gpio_LED.GPIO_PinConfig.GPIO_PinPUPDControl = GPIO_NO_PUPDN;
 
 	// 3. Input configurations : External push button
 	gpio_BUTTON.ptr_GPIOx = GPIOB;
 
-	gpio_BUTTON.GPIO_PinConfig.GPIO_PinNumber = PIN_TWELVE;
-	gpio_BUTTON.GPIO_PinConfig.GPIO_PinMode = INTERRUPT_FT;
+	gpio_BUTTON.GPIO_PinConfig.GPIO_PinNumber = GPIO_PIN_12;
+	gpio_BUTTON.GPIO_PinConfig.GPIO_PinMode = GPIO_INTERRUPT_FT;
 	gpio_BUTTON.GPIO_PinConfig.GPIO_PinPUPDControl = GPIO_PULL_UP;
 
 	// 4. GPIO Clock Initialization
@@ -47,8 +47,7 @@ int main(void)
 	GPIO_Init(&(gpio_BUTTON));
 
 	// 6. IRQ Configurations
-	NVIC_IRQNumberConfig(IRQ_EXTI15_10, ENABLE);
-	NVIC_IRQPriorityConfig(IRQ_EXTI15_10, 15);
+	EnableIRQ(gpio_BUTTON.ptr_GPIOx, gpio_BUTTON.GPIO_PinConfig.GPIO_PinNumber, 15);
 
 	for (;;);
 }
@@ -61,9 +60,6 @@ void delay(void)
 void EXTI15_10_IRQHandler(void)
 {
 	delay();
-	GPIO_IRQHandler(PIN_TWELVE);
-	GPIO_TogglePin(GPIOC, PIN_THIRTEEN);
+	GPIO_IRQHandlerFunc(GPIO_PIN_12);
+	GPIO_TogglePin(GPIOC, (1U << GPIO_PIN_13));
 }
-
-
-
