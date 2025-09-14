@@ -231,18 +231,25 @@ int8_t GPIO_GetIRQn(uint8_t pin)
     {
     	case 0:
     		return IRQ_EXTI0;
+
     	case 1:
     		return IRQ_EXTI1;
+
     	case 2:
     		return IRQ_EXTI2;
+
     	case 3:
     		return IRQ_EXTI3;
+
     	case 4:
     		return IRQ_EXTI4;
+
     	case 5: case 6: case 7: case 8: case 9:
     		return IRQ_EXTI9_5;
+
     	case 10: case 11: case 12: case 13: case 14: case 15:
     		return IRQ_EXTI15_10;
+
     	default:
     		return -1;
     }

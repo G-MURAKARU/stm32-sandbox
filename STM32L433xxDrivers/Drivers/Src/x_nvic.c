@@ -16,12 +16,12 @@ extern int8_t GPIO_GetIRQn(uint8_t);
 
 /*
 
- * @fn							- MCU_IRQPositionConfig
+ * @fn							- NVIC_ConfigIRQn
  *
  * @brief						- this function configures the IRQ position for an interrupt event - enables or disables interrupt actuation
  *
- * @param[IRQPosition]			- (pre-)configured IRQ position on NVIC for the given interrupt event
- * @param[en_di]				- action to take: ENABLE(1) or DISABLE(0)
+ * @param irq_position			- (pre-)configured IRQ position on NVIC for the given interrupt event
+ * @param en_di 				- action to take: ENABLE(1) or DISABLE(0)
  *
  * @return						- none
  *
@@ -76,12 +76,12 @@ static void NVIC_ConfigIRQn(uint8_t irq_position, bool en_di)
 
 /*
 
- * @fn							- MCU_IRQPriorityConfig
+ * @fn							- NVIC_ConfigIRQ_Priority
  *
  * @brief						- this function configures the IRQ priority for a given interrupt event (IRQ position) - lower number = higher priority
  *
- * @param[IRQPosition]			- (pre-)configured IRQ position on NVIC for the given interrupt event
- * @param[IRQPriority]			- priority to assign to the given interrupt event, depending on priority grouping
+ * @param irq_position			- (pre-)configured IRQ position on NVIC for the given interrupt event
+ * @param irq_priority			- priority to assign to the given interrupt event, depending on priority grouping
  *
  * @return						- none
  *
@@ -108,7 +108,21 @@ static void NVIC_ConfigIRQ_Priority(uint8_t irq_position, uint16_t irq_priority)
 	*(NVIC_IPRx + priority_reg_x) |= (irq_priority << shift_amount);
 }
 
+/*
 
+ * @fn							- EnableIRQ
+ *
+ * @brief						- this function enables interrupt functionality for a peripheral/pin
+ *
+ * @param peripheral			- peripheral for which interrupts are to be enabled
+ * @param id					- identifier e.g. specific pin number, specific peripheral e.g. SPI1, etc
+ * @param priority				- interrupt priority number
+ *
+ * @return						- none
+ *
+ * @Note						- none
+
+ */
 void EnableIRQ(void *const peripheral, uint8_t id, uint16_t priority)
 {
 	int8_t position = NVIC_ResolveIRQ(peripheral, id);
@@ -135,10 +149,12 @@ static int8_t NVIC_ResolveIRQ(void *const peripheral, uint8_t id)
 	else return (-1);
 }
 
+
 static __always_inline void NVIC_EnableIRQ(__RW uint32_t *const nvic_iser, uint8_t offset)
 {
 	*(nvic_iser) |= (SET_ONE_BITMASK << offset);
 }
+
 
 static __always_inline void NVIC_DisableIRQ(__RW uint32_t *const nvic_icer, uint8_t offset)
 {

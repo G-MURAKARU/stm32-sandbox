@@ -247,7 +247,7 @@ static __always_inline void GPIO_ResetPin(GPIOx_Reg_t *const ptr_GPIOx, uint32_t
  * @Note					- none
 
  */
-static inline void GPIO_TogglePin(GPIOx_Reg_t *const ptr_GPIOx, uint32_t pin_mask)
+static __always_inline void GPIO_TogglePin(GPIOx_Reg_t *const ptr_GPIOx, uint32_t pin_mask)
 {
 	const uint32_t odr_contents = ptr_GPIOx->ODR;
 

@@ -6,11 +6,14 @@
  */
 
 #include "x_gpio.h"
-#include "x_nvic.h"
+#include "x_gpio_irq.h"
 #include <stdlib.h>
 #include <string.h>
 
 void delay(void);
+void button_handler(void);
+
+static volatile bool button_pressed = false;
 
 
 int main(void)
@@ -19,8 +22,8 @@ int main(void)
 	GPIO_Handle_t gpio_LED, gpio_BUTTON;
 
 	// Ensure to clear the above structures' memory locations
-	memset(&(gpio_LED), 0, sizeof(gpio_LED));
-	memset(&(gpio_BUTTON), 0, sizeof(gpio_BUTTON));
+	memset(&(gpio_LED), 0, sizeof(GPIO_Handle_t));
+	memset(&(gpio_BUTTON), 0, sizeof(GPIO_Handle_t));
 
 	// 2. Output configurations : On-board LED
 	gpio_LED.ptr_GPIOx = GPIOC;
@@ -37,19 +40,26 @@ int main(void)
 	gpio_BUTTON.GPIO_PinConfig.GPIO_PinNumber = GPIO_PIN_12;
 	gpio_BUTTON.GPIO_PinConfig.GPIO_PinMode = GPIO_INTERRUPT_FT;
 	gpio_BUTTON.GPIO_PinConfig.GPIO_PinPUPDControl = GPIO_PULL_UP;
+	gpio_BUTTON.GPIO_PinConfig.GPIO_PinIRQPriority = 15;
 
-	// 4. GPIO Clock Initialization
-	GPIO_PeriphClkCtrl((__R GPIOx_Reg_t *const)gpio_LED.ptr_GPIOx, ENABLE);
-	GPIO_PeriphClkCtrl((__R GPIOx_Reg_t *const)gpio_BUTTON.ptr_GPIOx, ENABLE);
 
-	// 5. GPIO Configs. Initialization
+	// 4. GPIO Configs. Initialization
 	GPIO_Init(&(gpio_LED));
 	GPIO_Init(&(gpio_BUTTON));
 
-	// 6. IRQ Configurations
-	EnableIRQ(gpio_BUTTON.ptr_GPIOx, gpio_BUTTON.GPIO_PinConfig.GPIO_PinNumber, 15);
+	// 5. IRQ Configurations
+	GPIO_RegisterCallback(gpio_BUTTON.GPIO_PinConfig.GPIO_PinNumber, button_handler);
+	EnableIRQ(gpio_BUTTON.ptr_GPIOx, gpio_BUTTON.GPIO_PinConfig.GPIO_PinNumber, gpio_BUTTON.GPIO_PinConfig.GPIO_PinIRQPriority);
 
-	for (;;);
+	for (;;)
+	{
+		if (button_pressed)
+			{
+				GPIO_TogglePin(GPIOC, (1U << GPIO_PIN_13));
+				button_pressed = false;
+			}
+		// do other work();
+	}
 }
 
 void delay(void)
@@ -57,9 +67,9 @@ void delay(void)
 	for (uint32_t i = 0; i < 200000; ++i);
 }
 
-void EXTI15_10_IRQHandler(void)
+void button_handler(void)
 {
 	delay();
-	GPIO_IRQHandlerFunc(GPIO_PIN_12);
-	GPIO_TogglePin(GPIOC, (1U << GPIO_PIN_13));
+	button_pressed = true;
+	delay();
 }

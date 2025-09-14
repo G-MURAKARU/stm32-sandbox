@@ -395,7 +395,7 @@ static const RCC_Periph_t RCC_MAP_SYSCFG = { .RCC_BitPos = RCC_SYSCFG, .RCC_Bus 
  * @Note					- inline function definition
 
  */
-static inline void PER_EnableClock(RCC_Periph_t periph)
+static __always_inline void PER_EnableClock(RCC_Periph_t periph)
 {
 	switch (periph.RCC_Bus)
 	{
@@ -437,7 +437,7 @@ static inline void PER_EnableClock(RCC_Periph_t periph)
  * @Note					- inline function definition
 
  */
-static inline void PER_DisableClock(RCC_Periph_t periph)
+static __always_inline void PER_DisableClock(RCC_Periph_t periph)
 {
 	switch (periph.RCC_Bus)
 	{
@@ -486,7 +486,7 @@ static __always_inline void PER_ResetPeripheral_HelperFunc(__RW uint32_t *const 
  * @Note					- inline function definition
 
  */
-static inline void PER_ResetPeripheral(RCC_Periph_t periph)
+static __always_inline void PER_ResetPeripheral(RCC_Periph_t periph)
 {
 	switch (periph.RCC_Bus)
 	{
